@@ -1,0 +1,18 @@
+<group>
+    <fill>1</fill>
+    <radius>140</radius>
+    <center>163.265, 360</center>
+    <color>28, 197, 122, 255</color>
+    <circle_res>5</circle_res>
+    <screen_size>1280x720</screen_size>
+<group/>
+<particlesPerDrag>20</particlesPerDrag>
+	<dragRadius>79</dragRadius>
+	<dragSpread>20</dragSpread>
+	<particleLifeSpan>37.58</particleLifeSpan>
+	<xGravity>0</xGravity>
+	<yGravity>0</yGravity>
+<particleType>4</particleType>
+	<particleSize>42</particleSize>
+	<blendModeAdd>1</blendModeAdd>
+</group>
