@@ -1,5 +1,6 @@
 #pragma once
 #include "ofMain.h"
+#include "ofxDatGui.h"
 #include "ofxLiquidFun.h"
 #include "ofxGui.h"
 
@@ -21,31 +22,52 @@ public:
     void mouseReleased(int x, int y, int button);
     void resized(int w, int h);
     
+    
+    //LiquidFun & box2d
     ofxBox2d box2d;
     ofxBox2dParticleSystem particles;			      //    LiquidFun particle system
     vector <ofPtr<ofxBox2dCircle> >	circles;		  //	default box2d circles
     
     
-    //OF GUI 
-    void clearButtonPressed();
+    //DatGui
+    ofxDatGui* gui;
+    void refreshWindow();
+    void toggleFullscreen();
     
-    bool bHide;
-    ofxIntSlider particleType;
-    ofxIntSlider particlesPerDrag;
-    ofxIntSlider dragSpread;
-    ofxIntSlider dragRadius;
-    ofxFloatSlider particleLifeSpan;
-    ofxFloatSlider xGravity;
-    ofxFloatSlider yGravity;
-    ofxIntSlider particleSize;
+    void onButtonEvent(ofxDatGuiButtonEvent e);
+    void onToggleEvent(ofxDatGuiToggleEvent e);
+    void onSliderEvent(ofxDatGuiSliderEvent e);
+    void onTextInputEvent(ofxDatGuiTextInputEvent e);
+    void on2dPadEvent(ofxDatGui2dPadEvent e);
+    void onDropdownEvent(ofxDatGuiDropdownEvent e);
+    void onColorPickerEvent(ofxDatGuiColorPickerEvent e);
     
-    ofxButton clearButton;
-    ofxToggle blendModeAdd;
+    uint tIndex;
+    vector<ofxDatGuiTheme*> themes;
     
     
-    ofxColorSlider color;
     
-    ofxPanel gui;
     
-    vector<string> particleList;
+    //OF GUI
+//    void clearButtonPressed();
+//    
+//    bool bHide;
+//    ofxIntSlider particleType;
+//    ofxIntSlider particlesPerDrag;
+//    ofxIntSlider dragSpread;
+//    ofxIntSlider dragRadius;
+//    ofxFloatSlider particleLifeSpan;
+//    ofxFloatSlider xGravity;
+//    ofxFloatSlider yGravity;
+//    ofxIntSlider particleSize;
+//    
+//    ofxButton clearButton;
+//    ofxToggle blendModeAdd;
+//    
+//    
+//    ofxColorSlider color;
+//    
+//    ofxPanel gui;
+//    
+//    vector<string> particleList;
 };
