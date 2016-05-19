@@ -37,16 +37,28 @@ public:
     void onButtonEvent(ofxDatGuiButtonEvent e);
     void onToggleEvent(ofxDatGuiToggleEvent e);
     void onSliderEvent(ofxDatGuiSliderEvent e);
-    void onTextInputEvent(ofxDatGuiTextInputEvent e);
     void on2dPadEvent(ofxDatGui2dPadEvent e);
     void onDropdownEvent(ofxDatGuiDropdownEvent e);
     void onColorPickerEvent(ofxDatGuiColorPickerEvent e);
+    
+    ofxDatGuiSlider* s_particleLifeSpan;
+    
+    ofxDatGuiSlider* s_dragSpread;
+    ofxDatGuiSlider* s_dragRadius;
+    ofxDatGuiSlider* s_dragAmount;
+    
+    ofxDatGui2dPad* p_gravityPad;
+    
     
     uint tIndex;
     vector<ofxDatGuiTheme*> themes;
     
     
-    
+    //Global variables - are these still relevant?
+    //int particleLifeSpan;
+    float gravityX;
+    float gravityY;
+  
     
     //OF GUI
 //    void clearButtonPressed();

@@ -12,6 +12,13 @@ void ofApp::setup() {
     box2d.registerGrabbing();
     box2d.createBounds();
     
+    
+    //Set initial values for global variables - delete if not needed!
+    gravityX = 0;
+    gravityY = 0;
+    
+    //particleLifeSpan = 30;
+    
     ofColor color;
     color.set(255);
     
@@ -24,19 +31,13 @@ void ofApp::setup() {
 
     
     //DatGui
-    // instantiate and position the gui //
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
-    
-    // add some components //
-    gui->addTextInput("message", "# open frameworks #");
-    
     gui->addFRM();
     gui->addBreak();
     
     // add a folder to group a few components together //
     ofxDatGuiFolder* folder = gui->addFolder("white folder", ofColor::white);
-    folder->addTextInput("** input", "nested input field");
-    folder->addSlider("** slider", 0, 100);
+    //folder->addSlider("LIFESPANSLIDER", 0, 60, particleLifeSpan);
     folder->addToggle("** toggle");
     folder->addColorPicker("** picker", ofColor::fromHex(0xFFD00B));
     // let's have it open by default. note: call this only after you're done adding items //
@@ -44,10 +45,10 @@ void ofApp::setup() {
     
     gui->addBreak();
     
-    // add a couple range sliders //
-    gui->addSlider("position X", 0, 120, 75);
-    gui->addSlider("position Y", -40, 240, 200);
-    gui->addSlider("position Z", -80, 120, -40);
+    s_particleLifeSpan = gui->addSlider("LIFESPAN", 0, 60, 20);
+    s_dragAmount = gui->addSlider("DRAG AMOUNT", 1, 100, 20);
+    s_dragRadius = gui->addSlider("DRAG RADIUS", 0, 200, 60);
+    s_dragSpread = gui->addSlider("DRAG SPREAD", 0, 200, 20);
     
     // and a slider to adjust the gui opacity //
     gui->addSlider("datgui opacity", 0, 100, 100);
@@ -62,14 +63,16 @@ void ofApp::setup() {
     gui->addBreak();
     
     // add a dropdown menu //
-    vector<string> opts = {"option - 1", "option - 2", "option - 3", "option - 4"};
-    gui->addDropdown("select option", opts);
+    vector<string> opts = {"water", "wall", "spring", "elastic", "viscous", "powder","tensile", "colorMixing", "barrier", "staticPressure", "reactive", "repulsive"};
+    gui->addDropdown("particle type", opts);
     gui->addBreak();
     
-    // add a 2d pad //
-    ofxDatGui2dPad* pad = gui->add2dPad("2d pad");
     
-
+    // add a 2d pad //
+    p_gravityPad = gui->add2dPad("GRAVITY", ofRectangle(-1,-1,2,2)); //upperleft.x, upperleft.y, width, height
+    
+    //gui->add2dPad(<#string label#>, ofRectangle bounds)
+    
     
     // and a couple of simple buttons //
     gui->addButton("click");
@@ -81,7 +84,6 @@ void ofApp::setup() {
     // once the gui has been assembled, register callbacks to listen for component specific events //
     gui->onButtonEvent(this, &ofApp::onButtonEvent);
     gui->onSliderEvent(this, &ofApp::onSliderEvent);
-    gui->onTextInputEvent(this, &ofApp::onTextInputEvent);
     gui->on2dPadEvent(this, &ofApp::on2dPadEvent);
     gui->onDropdownEvent(this, &ofApp::onDropdownEvent);
     gui->onColorPickerEvent(this, &ofApp::onColorPickerEvent);
@@ -148,50 +150,16 @@ void ofApp::setup() {
 //--------------------------------------------------------------
 void ofApp::update() {
     box2d.update();
-//    box2d.setGravity(xGravity,yGravity);
-//    particles.setParticleLifetime(particleLifeSpan);
-//    
-//    //ofLog(OF_LOG_NOTICE, particleList[particleType]);
-//    
-//    switch(particleType){
-//        case 0:
-//            particles.setParticleFlag(b2_waterParticle );
-//            break;
-//        case 1:
-//            particles.setParticleFlag(b2_wallParticle );
-//            break;
-//        case 2:
-//            particles.setParticleFlag(b2_springParticle);
-//            break;
-//        case 3:
-//            particles.setParticleFlag(b2_elasticParticle);
-//            break;
-//        case 4:
-//            particles.setParticleFlag(b2_viscousParticle);
-//            break;
-//        case 5:
-//            particles.setParticleFlag(b2_powderParticle);
-//            break;
-//        case 6:
-//            particles.setParticleFlag(b2_tensileParticle);
-//            break;
-//        case 7:
-//            particles.setParticleFlag(b2_colorMixingParticle);
-//            break;
-//        case 8:
-//            particles.setParticleFlag(b2_barrierParticle );
-//            break;
-//        case 9:
-//            particles.setParticleFlag(b2_staticPressureParticle);
-//            break;
-//        case 10:
-//            particles.setParticleFlag(b2_reactiveParticle );
-//            break;
-//        case 11:
-//            particles.setParticleFlag(b2_repulsiveParticle);
-//            break;
+    
+    //DatGui updates test
+    //s_dragSpread-> setValue(ofGetMouseX()*0.15);
+
+   box2d.setGravity(gravityX,gravityY);
+   particles.setParticleLifetime(s_particleLifeSpan ->getValue());
+
+    
+//
 //            
-//    }
 //    
 //    //particles.setRadius(6); //Does not have any effect?
 //    
@@ -275,14 +243,9 @@ void ofApp::mouseMoved(int x, int y ) {
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
     
-    //if (ofGetKeyPressed()) {
-//    
-//    for (int i = 0; i < particlesPerDrag; i++) {
-//        float radius = ofRandom(dragRadius, dragRadius + dragSpread);
+    for (int i = 0; i < s_dragAmount->getValue(); i++) {
+        float radius = ofRandom(s_dragRadius->getValue(), s_dragRadius->getValue() + s_dragSpread->getValue());
     
-    for (int i = 0; i < 20; i++) {
-        float radius = ofRandom(60, 80);
-        
         float x = cos(ofRandom(PI * 2.0)) * radius + mouseX;
         float y = sin(ofRandom(PI * 2.0)) * radius + mouseY;
         ofVec2f position = ofVec2f(x, y);
@@ -293,7 +256,6 @@ void ofApp::mouseDragged(int x, int y, int button) {
         particles.setColor(color);
         particles.createParticle(position, velocity);
     }
-   // }
 }
 
 //--------------------------------------------------------------
@@ -319,22 +281,64 @@ void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
 void ofApp::onSliderEvent(ofxDatGuiSliderEvent e)
 {
     cout << "onSliderEvent: " << e.target->getLabel() << " "; e.target->printValue();
-    if (e.target->is("datgui opacity")) gui->setOpacity(e.scale);
+    if (e.target->is("datgui opacity")) {
+        gui->setOpacity(e.scale);
+    }
 }
 
-void ofApp::onTextInputEvent(ofxDatGuiTextInputEvent e)
-{
-    cout << "onTextInputEvent: " << e.target->getLabel() << " " << e.target->getText() << endl;
-}
 
 void ofApp::on2dPadEvent(ofxDatGui2dPadEvent e)
 {
     cout << "on2dPadEvent: " << e.target->getLabel() << " " << e.x << ":" << e.y << endl;
+    gravityX = e.x;
+    gravityY = e.y;
 }
 
 void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
 {
     cout << "onDropdownEvent: " << e.target->getLabel() << " Selected" << endl;
+    
+    //Sloppy way to set particle flags, rewrite this
+    string s =e.target->getLabel();
+    
+    if (s == "WATER") {
+        particles.setParticleFlag(b2_waterParticle );
+    }
+    else if (s == "WALL") {
+        particles.setParticleFlag(b2_wallParticle );
+    }
+    else if (s == "SPRING") {
+        particles.setParticleFlag(b2_springParticle );
+    }
+    else if (s == "ELASTIC") {
+        particles.setParticleFlag(b2_elasticParticle );
+    }
+    else if (s == "VISCOUS") {
+        particles.setParticleFlag(b2_viscousParticle );
+    }
+    else if (s == "POWDER") {
+        particles.setParticleFlag(b2_powderParticle );
+    }
+    else if (s == "TENSILE") {
+        particles.setParticleFlag(b2_tensileParticle );
+    }
+    else if (s == "COLORMIXING") {
+        particles.setParticleFlag(b2_colorMixingParticle );
+    }
+    else if (s == "BARRIER") {
+        particles.setParticleFlag(b2_barrierParticle );
+    }
+    else if (s == "STATICPRESSURE") {
+        particles.setParticleFlag(b2_staticPressureParticle );
+    }
+    else if (s == "REACTIVE") {
+        particles.setParticleFlag(b2_reactiveParticle );
+    }
+    else if (s == "REPULSIVE") {
+        particles.setParticleFlag(b2_repulsiveParticle );
+    }
+
+    
 }
 
 void ofApp::onColorPickerEvent(ofxDatGuiColorPickerEvent e)
