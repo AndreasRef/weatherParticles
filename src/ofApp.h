@@ -2,7 +2,7 @@
 #include "ofMain.h"
 #include "ofxDatGui.h"
 #include "ofxLiquidFun.h"
-#include "ofxGui.h"
+
 
 // -------------------------------------------------
 
@@ -21,7 +21,6 @@ public:
     void mousePressed(int x, int y, int button);
     void mouseReleased(int x, int y, int button);
     void resized(int w, int h);
-    
     
     //LiquidFun & box2d
     ofxBox2d box2d;
@@ -46,40 +45,16 @@ public:
     ofxDatGuiSlider* s_dragSpread;
     ofxDatGuiSlider* s_dragRadius;
     ofxDatGuiSlider* s_dragAmount;
+    ofxDatGuiSlider* s_particleSize;
     
     ofxDatGui2dPad* p_gravityPad;
+
     
-    
-    uint tIndex;
-    vector<ofxDatGuiTheme*> themes;
-    
-    
-    //Global variables - are these still relevant?
-    //int particleLifeSpan;
+    //Global variables
     float gravityX;
     float gravityY;
-  
+    Boolean blendModeAdd;
+    ofColor pColor;
     
-    //OF GUI
-//    void clearButtonPressed();
-//    
-//    bool bHide;
-//    ofxIntSlider particleType;
-//    ofxIntSlider particlesPerDrag;
-//    ofxIntSlider dragSpread;
-//    ofxIntSlider dragRadius;
-//    ofxFloatSlider particleLifeSpan;
-//    ofxFloatSlider xGravity;
-//    ofxFloatSlider yGravity;
-//    ofxIntSlider particleSize;
-//    
-//    ofxButton clearButton;
-//    ofxToggle blendModeAdd;
-//    
-//    
-//    ofxColorSlider color;
-//    
-//    ofxPanel gui;
-//    
-//    vector<string> particleList;
+
 };
