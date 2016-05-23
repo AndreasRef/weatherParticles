@@ -1,3 +1,4 @@
 ofxDatGui
 ofxGui
 ofxLiquidFun
+ofxOsc
