@@ -16,11 +16,14 @@ public:
     void draw();
     void keyPressed(int key);
     void mouseDragged(int x, int y, int button);
+    void loadHotelArrow();
     
     //LiquidFun & box2d
     ofxBox2d box2d;
     ofxBox2dParticleSystem particles;			      //    LiquidFun particle system
+    ofRectangle boundsA;
     vector <ofPtr<ofxBox2dCircle> >	circles;		  //	default box2d circles
+    vector <shared_ptr<ofxBox2dEdge> >   edges;       //    Hotel arrow edges
     
     //Osc
     ofxOscReceiver oscReceiver;
