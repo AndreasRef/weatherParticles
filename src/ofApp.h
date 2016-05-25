@@ -41,17 +41,15 @@ public:
     void onColorPickerEvent(ofxDatGuiColorPickerEvent e);
     
     ofxDatGuiSlider* s_particleLifeSpan;
-    
-    ofxDatGuiSlider* s_dragSpread;
-    ofxDatGuiSlider* s_dragRadius;
-    ofxDatGuiSlider* s_dragAmount;
+    ofxDatGuiSlider* s_creationSpread;
+    ofxDatGuiSlider* s_creationRadius;
+    ofxDatGuiSlider* s_creationAmount;
+    ofxDatGuiSlider* s_particleRadius;
     ofxDatGuiSlider* s_particleSize;
-    
     ofxDatGui2dPad* p_gravityPad;
 
     
     //Global variables
     ofColor pColor;
-    
 
 };

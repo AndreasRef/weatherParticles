@@ -13,24 +13,19 @@ void ofApp::setup() {
     box2d.registerGrabbing();
     box2d.createBounds(boundsA);
     
-    
-    //Quick hotel arrow
-    
     loadHotelArrow();
     
     
     //Set initial values for global variables
-    ofColor color;
-    color.set(255);
+    pColor.set(255);
     
-    pColor.set(255,255,255);
     
-    //See https://google.github.io/liquidfun/API-Ref/html/b2_particle_8h.html for particle types
-    //Also https://google.github.io/liquidfun/Programmers-Guide/html/md__chapter11__particles.html#pb
+    //LiquidFun particles
+    //See http://bit.ly/1YYigGM & http://bit.ly/25lc2Ij for more on particle types
     particles.setParticleFlag(b2_tensileParticle);
     particles.loadImage("particle32.png");
     //particles.setup(<#b2World *b2world#>, <#int maxCount#>, <#float lifetime#>, <#float radius#>, <#float particleSize#>, <#ofColor color#>)
-    particles.setup(box2d.getWorld(), 200000, 60.0, 6.0, 42.0, color);
+    particles.setup(box2d.getWorld(), 200000, 60.0, 6.0, 42.0,ofColor(255));
     
     //Osc
     oscReceiver.setup(12345);
@@ -38,60 +33,76 @@ void ofApp::setup() {
     
     //DatGui
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
-    gui->setTheme(new ofxDatGuiThemeSmoke());
+    //gui->setTheme(new ofxDatGuiThemeSmoke());
     gui->addFRM();
+    gui->addTextInput("Total particles");
+    //ofxDatGuiTextInput* myInput = new ofxDatGuiTextInput(string label, string value = "");
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
-    gui->addToggle("WEATHER PARTICLE CONTROL", false);
-    s_particleLifeSpan = gui->addSlider("LIFESPAN", 1, 60, 20);
-    s_dragAmount = gui->addSlider("DRAG AMOUNT", 1, 100, 20);
-    s_dragRadius = gui->addSlider("DRAG RADIUS", 0, 200, 60);
-    s_dragSpread = gui->addSlider("DRAG SPREAD", 0, 200, 20);
+    //1) Particle controls
+    gui->addToggle("WEATHER PARTICLE CONTROL", false)->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    gui->addToggle("MOUSE CREATION", TRUE)->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    gui->add2dPad("CREATION VELOCITY",ofRectangle(-200,-200,400,400))->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    gui->addButton("RESET VELOCITY")->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    
+    s_particleLifeSpan = gui->addSlider("LIFESPAN", 1, 120, 20);
+    s_creationAmount = gui->addSlider("CREATION AMOUNT", 1, 100, 20);
+    s_creationRadius = gui->addSlider("CREATION RADIUS", 0, 200, 60);
+    s_creationSpread = gui->addSlider("CREATION SPREAD", 0, 200, 20);
+    s_particleRadius = gui->addSlider("PARTICLE RADIUS", 0.01, 1, 0.22); //0.22 number does not make a lot of sense, but is the number that (more or less) matches radius 6.0
     s_particleSize = gui->addSlider("PARTICLE SIZE", 5, 64, 32);
     
-    gui->addBreak(); gui->addBreak(); gui->addBreak();
-    
-    p_gravityPad = gui->add2dPad("GRAVITY", ofRectangle(-1,-1,2,2));
-    gui->addButton("reset gravity");
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
+    
+    
+    //2) Particle type
     vector<string> opts = {"Particle type: water", "Particle type: wall", "Particle type:  spring", "Particle type: elastic", "Particle type: viscous", "Particle type: powder","Particle type: tensile", "Particle type: colorMixing", "Particle type: barrier", "Particle type: staticPressure", "Particle type: reactive", "Particle type: repulsive"};
-    gui->addDropdown("particle type", opts);
+    gui->addDropdown("particle type", opts)->setStripeColor(ofColor::fromHex(0x77C4D3));
     gui->getDropdown("particle type")->select(4);
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
-    gui->addColorPicker("PARTICLE COLOR", ofColor::fromHex(0xeeeeee));
-    gui->addToggle("BLENDMODE ADD", true);
+    //3) Particle color & blend
+    gui->addColorPicker("PARTICLE COLOR", ofColor::fromHex(0xeeeeee))->setStripeColor(ofColor::fromHex(0xDAEDE2));
+    gui->addToggle("BLENDMODE ADD", true)->setStripeColor(ofColor::fromHex(0xDAEDE2));
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
-    gui->addButton("clear objects");
+    
+    
+    //4) Gravity controls
+    p_gravityPad = gui->add2dPad("GRAVITY", ofRectangle(-1,-1,2,2));
+    gui->get2dPad("GRAVITY")->setStripeColor(ofColor::fromHex(0xEA2E49));
+    gui->addButton("reset gravity")->setStripeColor(ofColor::fromHex(0xEA2E49));
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
+    
+    //5) Weather parameters
     // add a folder to group a few components together //
     ofxDatGuiFolder* folder = gui->addFolder("weather conditions", ofColor::white);
+    gui->getFolder("weather conditions")->setStripeColor(ofColor::fromHex(0x333745));
     folder->addSlider("temperature", -20, 50);
-    folder->addSlider("windDirection", 0, 360);
-    folder->addSlider("windSpeed", 0, 100);
+    folder->addSlider("windDirection", 0, 360, 0);
+    folder->addSlider("windSpeed", 0, 100, 0);
     folder->addSlider("weatherType", 0, 100);
     folder->addSlider("rising", 0, 1);
-    
-    folder->addToggle("manual weather");
-    folder->addToggle("weather noise");
+    folder->addToggle("manual weather")->setStripeColor(ofColor::fromHex(0x333745));
+    folder->addToggle("weather noise")->setStripeColor(ofColor::fromHex(0x333745));
     folder->expand();
     
-    gui->addBreak(); gui->addBreak(); gui->addBreak();
-    gui->addToggle("HOTEL ARROW", true);
-    
-    
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
-    gui->addDropdown("groupedWeatherCode", codes);
+    gui->addDropdown("groupedWeatherCode", codes)->setStripeColor(ofColor::fromHex(0x333745));
     gui->getDropdown("groupedWeatherCode")->select(0);
     
+    gui->addBreak(); gui->addBreak(); gui->addBreak();
+    
+    //6) MISC
+    gui->addToggle("HOTEL ARROW", true)->setStripeColor(ofColor::fromHex(0xF6F792));
+    gui->addButton("clear objects")->setStripeColor(ofColor::fromHex(0xF6F792));
     
     gui->addHeader(":: drag me to reposition ::");
     gui->addFooter();
@@ -112,11 +123,41 @@ void ofApp::setup() {
 void ofApp::update() {
     box2d.update();
     
-    particles.setParticleLifetime(s_particleLifeSpan ->getValue());
-    particles.particleSize = s_particleSize -> getValue();
+    gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
     
-    //    //particles.setRadius(6); //Does not have any effect?
-    //    //particles.setColor(ofColor(0, ofRandom( 0, 255 ), ofRandom( 0, 255 )));
+    particles.setParticleLifetime(s_particleLifeSpan ->getValue());
+    particles.particleSystem->SetRadius(s_particleRadius->getValue());
+    particles.particleSize = s_particleSize -> getValue();
+    particles.setColor(ofColor(0, ofRandom( 0, 255 ), ofRandom( 0, 255 )));
+    
+    
+    //Add attraction point to mouse
+//    ofVec2f mouse(ofGetMouseX(), ofGetMouseY());
+//    for(int i=0; i<circles.size(); i++) {
+//        circles[i].get()->addAttractionPoint(mouse, 4.0);
+//    }
+    
+    
+    
+    
+    //Create particles from the top
+    
+    if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
+        
+        for (int i = 0; i < s_creationAmount->getValue(); i++) {
+            float radius = ofRandom(s_creationRadius->getValue(), s_creationRadius->getValue() + s_creationSpread->getValue());
+            
+            float x = cos(ofRandom(PI * 2.0)) * radius + 500;
+            float y = sin(ofRandom(PI * 2.0)) * radius + 50;
+
+            //ofVec2f position = ofVec2f(x, y);
+            ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(100));
+            ofVec2f velocity = ofVec2f(gui->get2dPad("CREATION VELOCITY")->getPoint());
+            particles.createParticle(position, velocity);
+        }
+        
+    }
+    
     
     float noiseVal = 0;
     float amplitude = 1.0;
@@ -164,50 +205,32 @@ void ofApp::update() {
     
     
     if (gui ->getToggle("WEATHER PARTICLE CONTROL")->getChecked() == 1) {
-        //gui->getSlider("LIFESPAN") -> setValue(gui->getSlider("temperature") ->getValue());
-        
-        //Works!!
-        //        gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),11.5,12.5,5,50));
-        
-        //Attempt w. lerp
+        //Lerp towards new value
         gui->getSlider("PARTICLE SIZE") -> setValue(ofLerp(gui->getSlider("PARTICLE SIZE") ->getValue(), ofMap(gui->getSlider("temperature") ->getValue(),11.5,12.5,5,50),0.1));
+    
+        //Windspeed & winddirection -> Gravity
+        float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+        float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+        float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
+        
+        gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
+        
+        box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
+    
     }
-    
-    
-    //Windspeed & winddirection -> Gravity
-    
-    //Tests
-    //    ofLog(OF_LOG_NOTICE, "/x " + ofToString(cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+180))));
-    //    ofLog(OF_LOG_NOTICE, "/y " + ofToString(sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+180))));
-    
-    float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-    float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-    float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
-    
-    //Attempt to control gravity
-    //box2d.setGravity(x,y); //Directly
-    gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
-    
-    box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
-    
-    
 }
 
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-    //ofBackgroundGradient(ofColor(0), ofColor(63), OF_GRADIENT_LINEAR);
+    ofBackgroundGradient(ofColor(0), ofColor(63), OF_GRADIENT_LINEAR);
     
     //ofDrawRectangle(boundsA); //Debug rectangle
     
-    
-    //Draw hotel arrow
-    
     ofSetHexColor(0x00ff00);
     ofNoFill();
-    
     for (int i=0; i<edges.size(); i++) {
-       // edges[i].get()->draw();
+        edges[i].get()->draw();     //Draw hotel arrow
     }
     
     
@@ -221,13 +244,6 @@ void ofApp::draw() {
     
     particles.draw();
     ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-    
-    string info = "";
-    info += "Mouse Drag for particles\n";
-    info += "Total Particles: "+ofToString(particles.getParticleCount())+"\n\n";
-    info += "FPS: "+ofToString(ofGetFrameRate(), 1)+"\n";
-    ofSetHexColor(0xffffff);
-    ofDrawBitmapString(info, 30, 30);
     
 }
 
@@ -257,19 +273,20 @@ void ofApp::keyPressed(int key){
 void ofApp::mouseDragged(int x, int y, int button) {
     
     
-    if(ofGetMouseX() < ofGetWidth()-270) {
-        for (int i = 0; i < s_dragAmount->getValue(); i++) {
-            float radius = ofRandom(s_dragRadius->getValue(), s_dragRadius->getValue() + s_dragSpread->getValue());
+    if(ofGetMouseX() < ofGetWidth()-270 && gui -> getToggle("MOUSE CREATION") ->getChecked() == 1) {
+        for (int i = 0; i < s_creationAmount->getValue(); i++) {
+            float radius = ofRandom(s_creationRadius->getValue(), s_creationRadius->getValue() + s_creationSpread->getValue());
             
             float x = cos(ofRandom(PI * 2.0)) * radius + mouseX;
             float y = sin(ofRandom(PI * 2.0)) * radius + mouseY;
             ofVec2f position = ofVec2f(x, y);
-            ofVec2f velocity = ofVec2f(0, 0);
+            ofVec2f velocity = ofVec2f(gui->get2dPad("CREATION VELOCITY")->getPoint());
             //        ofColor color;
             //        int hue = int(ofGetFrameNum() / 4.0) % 255;
             //        color.setHsb(hue, 180, 200);
-            //particles.setColor(color);
-            particles.setColor(pColor);
+            //particles.setColor(color); //Hue sweep color
+            //particles.setColor(pColor); //ColorPicker color
+            //particles.setColor(ofColor(0, ofRandom( 0, 255 ), ofRandom( 0, 255 )));
             particles.createParticle(position, velocity);
         }
     }
@@ -284,10 +301,12 @@ void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
     
     if (e.target->getLabel() == "CLEAR OBJECTS") {
         
-        //Don't know how to clear the particles yet...
-        
-        for(int i=0; i<circles.size(); i++) {
+        for(int i = 0; i<particles.particleSystem->GetParticleCount(); i++) {
+        particles.particleSystem->DestroyParticle(i);
+        //particles.particleSystem->SetRadius(10);
+        }
             
+        for(int i=0; i<circles.size(); i++) {
             circles[i].get()->destroy();
         }
     }
@@ -295,7 +314,9 @@ void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
     else if (e.target->getLabel() == "RESET GRAVITY") {
         box2d.setGravity(0,0);
         gui->get2dPad("GRAVITY")->reset();
-        
+    }
+    else if(e.target->getLabel() == "RESET VELOCITY") {
+        gui->get2dPad("CREATION VELOCITY")->reset();
     }
 }
 
@@ -326,18 +347,24 @@ void ofApp::on2dPadEvent(ofxDatGui2dPadEvent e)
 {
     cout << "on2dPadEvent: " << e.target->getLabel() << " " << e.x << ":" << e.y << endl;
     
-    box2d.setGravity(e.x,e.y);
-    
+    if (e.target->getLabel() == "GRAVITY") {
+        box2d.setGravity(e.x,e.y);
+    } else if(e.target->getLabel()=="CREATION VELOCITY") {
+        //
+    }
 }
 
 void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
 {
     cout << "onDropdownEvent: " << e.target->getLabel() << " Selected" << endl;
     
+
+    
     //Sloppy way to set particle flags, rewrite this
     string s =e.target->getLabel();
     
-    if (s == "PARTICLE TYPE: WATER") {
+    if (s == "PARTICLE TYPE: WATER" || s == "WEATHER CODE: RAIN") {
+        gui->getDropdown("PARTICLE TYPE")->select(0); //Rain selects water particle
         particles.setParticleFlag(b2_waterParticle );
     }
     else if (s == "PARTICLE TYPE: WALL") {
@@ -349,13 +376,15 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
     else if (s == "PARTICLE TYPE: ELASTIC") {
         particles.setParticleFlag(b2_elasticParticle );
     }
-    else if (s == "PARTICLE TYPE: VISCOUS") {
+    else if (s == "PARTICLE TYPE: VISCOUS" || s == "WEATHER CODE: CLOUDY") {
+        gui->getDropdown("PARTICLE TYPE")->select(4); //Cloudy selects viscous particle
         particles.setParticleFlag(b2_viscousParticle );
     }
     else if (s == "PARTICLE TYPE: POWDER") {
         particles.setParticleFlag(b2_powderParticle );
     }
-    else if (s == "PARTICLE TYPE: TENSILE") {
+    else if (s == "PARTICLE TYPE: TENSILE" || s == "WEATHER CODE: CLEAR") {
+        gui->getDropdown("PARTICLE TYPE")->select(6); //Clear selects tensile particle
         particles.setParticleFlag(b2_tensileParticle );
     }
     else if (s == "PARTICLE TYPE: COLORMIXING") {
@@ -367,13 +396,14 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
     else if (s == "PARTICLE TYPE: STATICPRESSURE") {
         particles.setParticleFlag(b2_staticPressureParticle );
     }
-    else if (s == "PARTICLE TYPE: REACTIVE") {
+    else if (s == "PARTICLE TYPE: REACTIVE" || s == "WEATHER CODE: SNOW") {
+        gui->getDropdown("PARTICLE TYPE")->select(10); //Snow selects reactive particle
         particles.setParticleFlag(b2_reactiveParticle );
     }
-    else if (s == "PARTICLE TYPE: REPULSIVE") {
+    else if (s == "PARTICLE TYPE: REPULSIVE" || s == "WEATHER CODE: THUNDER") {
+        gui->getDropdown("PARTICLE TYPE")->select(11); //Clear selects repulsive particle
         particles.setParticleFlag(b2_repulsiveParticle );
     }
-    
 }
 
 void ofApp::onColorPickerEvent(ofxDatGuiColorPickerEvent e)
@@ -381,7 +411,6 @@ void ofApp::onColorPickerEvent(ofxDatGuiColorPickerEvent e)
     cout << "onColorPickerEvent: " << e.target->getLabel() << " " << e.target->getColor() << endl;
     
     if (e.target->getLabel() == "PARTICLE COLOR") {
-        //ofSetBackgroundColor(e.color);
         pColor.set(e.color);
     }
 }
@@ -410,7 +439,6 @@ void ofApp::loadHotelArrow()
                     edge.get()->addVertex(x, y);
                 }
             }
-            //edge.get()->close();
             edge.get()->create(box2d.getWorld());
             edges.push_back(edge);
         }
