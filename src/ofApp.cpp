@@ -67,6 +67,7 @@ void ofApp::setup() {
     
     //3) Particle color & blend
     gui->addColorPicker("PARTICLE COLOR", ofColor::fromHex(0xeeeeee))->setStripeColor(ofColor::fromHex(0xDAEDE2));
+    gui->addToggle("HSB CYCLE", true)->setStripeColor(ofColor::fromHex(0xDAEDE2));
     gui->addToggle("BLENDMODE ADD", true)->setStripeColor(ofColor::fromHex(0xDAEDE2));
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
@@ -85,13 +86,13 @@ void ofApp::setup() {
     // add a folder to group a few components together //
     ofxDatGuiFolder* folder = gui->addFolder("weather conditions", ofColor::white);
     gui->getFolder("weather conditions")->setStripeColor(ofColor::fromHex(0x333745));
+    folder->addToggle("manual weather");
     folder->addSlider("temperature", -20, 50);
     folder->addSlider("windDirection", 0, 360, 0);
     folder->addSlider("windSpeed", 0, 100, 0);
-    folder->addSlider("weatherType", 0, 100);
-    folder->addSlider("rising", 0, 1);
-    folder->addToggle("manual weather")->setStripeColor(ofColor::fromHex(0x333745));
-    folder->addToggle("weather noise")->setStripeColor(ofColor::fromHex(0x333745));
+    folder->addToggle("rising");
+
+    folder->addToggle("weather noise");
     folder->expand();
     
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
@@ -128,20 +129,16 @@ void ofApp::update() {
     particles.setParticleLifetime(s_particleLifeSpan ->getValue());
     particles.particleSystem->SetRadius(s_particleRadius->getValue());
     particles.particleSize = s_particleSize -> getValue();
-    particles.setColor(ofColor(0, ofRandom( 0, 255 ), ofRandom( 0, 255 )));
-    
-    
-    //Add attraction point to mouse
-//    ofVec2f mouse(ofGetMouseX(), ofGetMouseY());
-//    for(int i=0; i<circles.size(); i++) {
-//        circles[i].get()->addAttractionPoint(mouse, 4.0);
-//    }
-    
+
+    if (gui->getToggle("HSB CYCLE")->getChecked() == 1) {
+    int hue = int(ofGetFrameNum() / 4.0) % 255;
+    pColor.setHsb(hue, 180, 200);
+    }
+    particles.setColor(ofColor(pColor));
     
     
     
     //Create particles from the top
-    
     if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
         
         for (int i = 0; i < s_creationAmount->getValue(); i++) {
@@ -194,7 +191,8 @@ void ofApp::update() {
                 
             } else if ( m.getAddress() == "/rising" ) {
                 ofLog(OF_LOG_NOTICE, "/rising " + ofToString(m.getArgAsInt( 0 )));
-                gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
+                gui->getToggle("rising") -> setChecked(m.getArgAsInt( 0 ));
+                //gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
                 
             } else if ( m.getAddress() == "/counter" ) {
                 
@@ -226,8 +224,8 @@ void ofApp::draw() {
     ofBackgroundGradient(ofColor(0), ofColor(63), OF_GRADIENT_LINEAR);
     
     //ofDrawRectangle(boundsA); //Debug rectangle
-    
-    ofSetHexColor(0x00ff00);
+
+    ofSetColor(255, 40);
     ofNoFill();
     for (int i=0; i<edges.size(); i++) {
         edges[i].get()->draw();     //Draw hotel arrow
@@ -281,12 +279,6 @@ void ofApp::mouseDragged(int x, int y, int button) {
             float y = sin(ofRandom(PI * 2.0)) * radius + mouseY;
             ofVec2f position = ofVec2f(x, y);
             ofVec2f velocity = ofVec2f(gui->get2dPad("CREATION VELOCITY")->getPoint());
-            //        ofColor color;
-            //        int hue = int(ofGetFrameNum() / 4.0) % 255;
-            //        color.setHsb(hue, 180, 200);
-            //particles.setColor(color); //Hue sweep color
-            //particles.setColor(pColor); //ColorPicker color
-            //particles.setColor(ofColor(0, ofRandom( 0, 255 ), ofRandom( 0, 255 )));
             particles.createParticle(position, velocity);
         }
     }
@@ -331,7 +323,6 @@ void ofApp::onToggleEvent(ofxDatGuiToggleEvent e)
          } else if (e.target -> getChecked() == 1) {
           loadHotelArrow();
          }
-    
      }
 }
 
@@ -358,7 +349,6 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
 {
     cout << "onDropdownEvent: " << e.target->getLabel() << " Selected" << endl;
     
-
     
     //Sloppy way to set particle flags, rewrite this
     string s =e.target->getLabel();
@@ -412,6 +402,7 @@ void ofApp::onColorPickerEvent(ofxDatGuiColorPickerEvent e)
     
     if (e.target->getLabel() == "PARTICLE COLOR") {
         pColor.set(e.color);
+        gui->getToggle("HSB CYCLE")->setChecked(false);
     }
 }
 
