@@ -15,10 +15,10 @@ void ofApp::setup() {
     
     loadHotelArrow();
     
-    
     //Set initial values for global variables
     pColor.set(255);
-    
+    creationLimitY = ofGetHeight();
+    radiusNoise = false;
     
     //LiquidFun particles
     //See http://bit.ly/1YYigGM & http://bit.ly/25lc2Ij for more on particle types
@@ -34,14 +34,12 @@ void ofApp::setup() {
     //DatGui
     
     //1) Framerate and particles
-
     ofColor bg= ofColor::fromHex(0x0c542c);
     
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
     //gui->setTheme(new ofxDatGuiThemeSmoke());
     gui->addFRM()->setBackgroundColor(bg);
     gui->addTextInput("Total particles")->setBackgroundColor(bg);
-    
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
@@ -99,11 +97,14 @@ void ofApp::setup() {
     gui->getColorPicker("PARTICLE COLOR")->setBackgroundColor(bg);
     gui->addToggle("HSB CYCLE", true)->setStripeColor(stripe);
     gui->getToggle("HSB CYCLE")->setBackgroundColor(bg);
+    gui->addSlider("BLENDHSB",0.0,1.0,0.1)->setBackgroundColor(bg);
+    gui->getSlider("BLENDHSB")->setStripeColor(stripe);
+    gui->addSlider("HSB SPEED",0.1,100,10)->setBackgroundColor(bg);
+    gui->getSlider("HSB SPEED")->setStripeColor(stripe);
     gui->addToggle("BLENDMODE ADD", true)->setStripeColor(stripe);
     gui->getToggle("BLENDMODE ADD")->setBackgroundColor(bg);
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
-    
     
     
     //5) Gravity controls
@@ -111,8 +112,8 @@ void ofApp::setup() {
     bg= ofColor::fromHex(0x54111b);
     
     p_gravityPad = gui->add2dPad("GRAVITY", ofRectangle(-1,-1,2,2));
-    gui->get2dPad("GRAVITY")->setStripeColor(stripe);
-    gui->get2dPad("GRAVITY")->setBackgroundColor(bg);
+    p_gravityPad->setStripeColor(stripe);
+    p_gravityPad->setBackgroundColor(bg);
     gui->addButton("reset gravity")->setStripeColor(stripe);
     gui->getButton("reset gravity")->setBackgroundColor(bg);
     gui->addBreak(); gui->addBreak(); gui->addBreak();
@@ -137,9 +138,13 @@ void ofApp::setup() {
     
     
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
-    gui->addDropdown("groupedWeatherCode", codes)->setStripeColor(ofColor::fromHex(0x2fa1d6));
-    gui->getDropdown("groupedWeatherCode")->select(0);
-    gui->getDropdown("groupedWeatherCode")->setBackgroundColor(ofColor::fromHex(0x5e6680));
+    d_weather = gui->addDropdown("groupedWeatherCode", codes);
+    d_weather->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    d_weather->select(0);
+    d_weather->setBackgroundColor(ofColor::fromHex(0x5e6680));
+    
+    
+    
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
@@ -171,6 +176,10 @@ void ofApp::setup() {
 void ofApp::update() {
     box2d.update();
     
+    
+
+    
+    
     gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
     
     particles.setParticleLifetime(s_particleLifeSpan ->getValue());
@@ -180,8 +189,16 @@ void ofApp::update() {
     
     
     if (gui->getToggle("HSB CYCLE")->getChecked() == 1) {
-        int hue = int(ofGetFrameNum() / 4.0) % 255;
+        
+        if (ofRandom(1)>gui->getSlider("BLENDHSB")->getValue()) {
+            pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
+            
+        } else {
+        
+        int hue = int(ofGetFrameNum() / gui->getSlider("HSB SPEED")->getValue()) % 255;
         pColor.setHsb(hue, 180, 200);
+            
+        }
     }
     particles.setColor(ofColor(pColor));
     
@@ -198,7 +215,7 @@ void ofApp::update() {
             
             //ofVec2f position = ofVec2f(x, y);
             //ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(100));
-            ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(ofGetHeight())); //totally random position
+            ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
             ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
             particles.createParticle(position, velocity);
         }
@@ -210,6 +227,17 @@ void ofApp::update() {
     float amplitude = 1.0;
     float speed = 0.1;
     float noisePos = 1000;
+    
+    
+    //Fast noise
+    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed*7 + noisePos )-amplitude/4;
+    
+    //radiusNoise
+    if (radiusNoise == true) {
+        s_particleRadius->setValue(0.01 + noiseVal);
+        
+    }
+    
     
     //If manual weather is off -> Get weather from Osc messages
     if (gui ->getToggle("MANUAL WEATHER")->getChecked() == 0) {
@@ -253,24 +281,27 @@ void ofApp::update() {
                     float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
                     gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
                     box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
+                    
+                    p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
+                    box2d.setGravity(p_gravityPad->getPoint());
+                    
+                    
                 }
                 
             }
-            //            else if ( m.getAddress() == "/weatherType" ) {
-            //                ofLog(OF_LOG_NOTICE, ofToString("/weatherType " + m.getArgAsString( 0 )));
-            //
-            //            }
+            
             
             else if ( m.getAddress() == "/groupedWeatherCode" ) {
                 ofLog(OF_LOG_NOTICE, ofToString("/groupedWeatherCode " + ofToString(m.getArgAsInt( 0 ))));
                 //
-                gui->getDropdown("groupedWeatherCode")->select(m.getArgAsInt(0));
+                d_weather->select(m.getArgAsInt(0));
                 
                 //right mapping from weatherCodes to particle types
                 int mapping[] = {6,4,0,10,9,11};
                 
                 gui->getDropdown("particle type")->select(mapping[m.getArgAsInt(0)]);
                 
+                weatherType(m.getArgAsInt(0));
                 
             }
             
@@ -285,38 +316,11 @@ void ofApp::update() {
                 ofLog(OF_LOG_NOTICE, "/counter " + ofToString(m.getArgAsInt( 0 )));
             }
             
-            //Update values
-            //            float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-            //            float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-            //            float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
-            //            gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
-            //            box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
-            
         }
     }
     
     
     if (gui ->getToggle("WEATHER PARTICLE CONTROL")->getChecked() == 1) {
-        
-        
-        
-        //Lerp towards new value
-        //        gui->getSlider("PARTICLE SIZE") -> setValue(ofLerp(gui->getSlider("PARTICLE SIZE") ->getValue(), ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50),0.1));
-        
-        //        Windspeed & winddirection -> Gravity
-        //        float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-        //        float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-        //        float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
-        
-        
-        //Do this only on GUIevents or incomming data events to maximize effeciency
-        
-        //        if (ofGetFrameNum() % 600 == 0) {
-        
-        //        gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
-        //        box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
-        
-        //        }
         
     }
 }
@@ -324,8 +328,8 @@ void ofApp::update() {
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-    ofBackgroundGradient(ofColor(0), ofColor(63), OF_GRADIENT_LINEAR);
-    
+    //ofBackgroundGradient(ofColor(0), ofColor(63), OF_GRADIENT_LINEAR);
+    ofBackground(0);
     //ofDrawRectangle(boundsA); //Debug rectangle
     
     ofSetColor(255, 40);
@@ -372,7 +376,6 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
-    
     
     if(ofGetMouseX() < ofGetWidth()-270 && gui -> getToggle("MOUSE CREATION") ->getChecked() == 1) {
         for (int i = 0; i < s_creationAmount->getValue(); i++) {
@@ -441,7 +444,6 @@ void ofApp::onSliderEvent(ofxDatGuiSliderEvent e)
 {
     cout << "onSliderEvent: " << e.target->getLabel() << " "; e.target->printValue();
     
-    
     if (e.target->getLabel() == "TEMPERATURE") {
         gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("TEMPERATURE") ->getValue(),-15,50,5,50));
     }
@@ -452,9 +454,7 @@ void ofApp::onSliderEvent(ofxDatGuiSliderEvent e)
         float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
         gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
         box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
-        
     }
-    
 }
 
 
@@ -472,10 +472,22 @@ void ofApp::on2dPadEvent(ofxDatGui2dPadEvent e)
 void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
 {
     cout << "onDropdownEvent: " << e.target->getLabel() << " Selected" << endl;
+    string s =e.target->getLabel();
+    
+    if (e.target ==  d_weather) {
+
+        if (s== "WEATHER CODE: CLEAR") weatherType(0);
+        if (s== "WEATHER CODE: CLOUDY") weatherType(1);
+        if (s== "WEATHER CODE: RAIN") weatherType(2);
+        if (s== "WEATHER CODE: SNOW") weatherType(3);
+        if (s== "WEATHER CODE: STORM") weatherType(4);
+        if (s== "WEATHER CODE: THUNDER") weatherType(5);
+
+    }
     
     
     //Sloppy way to set particle flags, rewrite this
-    string s =e.target->getLabel();
+    //string s =e.target->getLabel();
     
     if (s == "PARTICLE TYPE: WATER" || s == "WEATHER CODE: RAIN") {
         gui->getDropdown("PARTICLE TYPE")->select(0); //Rain selects water particle
@@ -559,7 +571,86 @@ void ofApp::loadHotelArrow()
             edges.push_back(edge);
         }
     }
-    
 }
 
+void ofApp:: weatherType(int index) {
+//    ofLog(OF_LOG_NOTICE, ofToString("/weatherTypeFunction " + ofToString(index)));
+    
+    
+    switch(index){
+        case 0: //Clear weather
+            
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0xF7E359));
+            s_particleLifeSpan ->setValue(120);
+            s_creationAmount ->setValue(1);
+            s_particleRadius->setValue(0.22);
+            creationLimitY = ofGetHeight();
+            radiusNoise = false;
+
+            gui->get2dPad("VELOCITY")->reset();
+            break;
+            
+        case 1: //Cloudy weather
+            
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x5D84CC));
+            s_particleLifeSpan ->setValue(120);
+            s_creationAmount ->setValue(3);
+            s_particleRadius->setValue(0.22);
+            creationLimitY = ofGetHeight();
+            radiusNoise = false;
+            
+            gui->get2dPad("VELOCITY")->reset();
+            
+            break;
+            
+        case 2: //Rain weather
+            
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x0095FF));
+            s_particleLifeSpan ->setValue(30);
+            s_creationAmount ->setValue(8);
+            s_particleRadius->setValue(0.22);
+            creationLimitY = ofGetHeight()/4.0;
+            radiusNoise = false;
+         
+            break;
+            
+        case 3: //Snow weather
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0xF1FDFF));
+            s_particleLifeSpan ->setValue(10);
+            s_creationAmount ->setValue(22);
+            s_particleRadius->setValue(0.2);
+            creationLimitY = ofGetHeight()/3.0;
+            radiusNoise = false;
+            break;
+            
+        case 4: //Storm weather
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x1054DB));
+            s_particleLifeSpan ->setValue(30);
+            s_creationAmount ->setValue(4);
+            s_particleRadius->setValue(0.22);
+            creationLimitY = ofGetHeight();
+            radiusNoise = true;
+
+            break;
+            
+        case 5: //Thunder weather
+            gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x00215A));
+            s_particleLifeSpan ->setValue(40);
+            s_creationAmount ->setValue(4);
+            s_particleRadius->setValue(0.22);
+            creationLimitY = ofGetHeight();
+            radiusNoise = true;
+
+            break;
+            
+        default:
+            
+            break;
+    }
+    
+    pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
+    
+    
+    
+}
 

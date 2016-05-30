@@ -17,6 +17,7 @@ public:
     void keyPressed(int key);
     void mouseDragged(int x, int y, int button);
     void loadHotelArrow();
+    void weatherType(int index);
     
     //LiquidFun & box2d
     ofxBox2d box2d;
@@ -46,10 +47,14 @@ public:
     ofxDatGuiSlider* s_creationAmount;
     ofxDatGuiSlider* s_particleRadius;
     ofxDatGuiSlider* s_particleSize;
+    
     ofxDatGui2dPad* p_gravityPad;
+    ofxDatGuiDropdown* d_weather;
 
     
     //Global variables
     ofColor pColor;
+    int creationLimitY;
+    Boolean radiusNoise;
 
 };
