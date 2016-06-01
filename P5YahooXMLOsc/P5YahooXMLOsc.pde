@@ -211,8 +211,8 @@ void draw() {
   //Lprintme("Sun is: " + risingCode[_rising], 20);
 
 
-  //Print our vars every 60th frame (not in the very beginning to avoid variables being zero)
-  if (frameCount % 60 == 1 && frameCount > 10) {
+  //Print our vars every 300th frame (not in the very beginning to avoid variables being zero)
+  if (frameCount % 300 == 1 && frameCount > 10) {
     
     println(
       "temperature: " + _temperature +

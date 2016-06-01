@@ -11,7 +11,9 @@ void ofApp::setup() {
     box2d.setGravity(0, 0);
     box2d.setFPS(30.0);
     box2d.registerGrabbing();
-    box2d.createBounds(boundsA);
+    //box2d.createBounds(boundsA);
+    box2d.createBounds();
+    
     
     loadHotelArrow();
     
@@ -37,7 +39,6 @@ void ofApp::setup() {
     ofColor bg= ofColor::fromHex(0x0c542c);
     
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
-    //gui->setTheme(new ofxDatGuiThemeSmoke());
     gui->addFRM()->setBackgroundColor(bg);
     gui->addTextInput("Total particles")->setBackgroundColor(bg);
     
@@ -66,7 +67,7 @@ void ofApp::setup() {
     s_particleLifeSpan = gui->addSlider("LIFESPAN", 1, 120, 20);
     s_particleLifeSpan-> setBackgroundColor(bg);
     
-    s_creationAmount = gui->addSlider("CREATION AMOUNT", 1, 100, 20);
+    s_creationAmount = gui->addSlider("CREATION AMOUNT", 1, 100, 3);
     s_creationAmount-> setBackgroundColor(bg);
     
     s_creationRadius = gui->addSlider("CREATION RADIUS", 0, 200, 60);
@@ -80,6 +81,11 @@ void ofApp::setup() {
     
     s_particleSize = gui->addSlider("PARTICLE SIZE", 5, 64, 32);
     s_particleSize-> setBackgroundColor(bg);
+    gui->addSlider("DAMPING", 0.0, 5.0,1.0);
+    
+    gui->addSlider("NOISE SPEED", 0.0, 5.0,0.8);
+    gui->addSlider("NOISE AMPLITUDE", 0.2, 3.0,1.0);
+    
     
     
     vector<string> opts = {"Particle type: water", "Particle type: wall", "Particle type:  spring", "Particle type: elastic", "Particle type: viscous", "Particle type: powder","Particle type: tensile", "Particle type: colorMixing", "Particle type: barrier", "Particle type: staticPressure", "Particle type: reactive", "Particle type: repulsive"};
@@ -132,10 +138,6 @@ void ofApp::setup() {
     gui->addToggle("rising")->setBackgroundColor(bg);
     gui->getToggle("rising")->setStripeColor(stripe);
     
-    gui->addToggle("weather noise")->setBackgroundColor(bg);
-    gui->getToggle("weather noise")->setStripeColor(stripe);
-    
-    
     
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
     d_weather = gui->addDropdown("groupedWeatherCode", codes);
@@ -144,15 +146,13 @@ void ofApp::setup() {
     d_weather->setBackgroundColor(ofColor::fromHex(0x5e6680));
     
     
-    
-    
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
     //7) MISC
     stripe = ofColor::fromHex(0xF6F792);
     bg= ofColor::fromHex(0x7f804b);
     
-    gui->addToggle("HOTEL ARROW", true)->setStripeColor(stripe);
+    gui->addToggle("HOTEL ARROW", false)->setStripeColor(stripe);
     gui->getToggle("HOTEL ARROW")->setBackgroundColor(bg);
     gui->addButton("CLEAR OBJECTS")->setStripeColor(stripe);
     gui->getButton("CLEAR OBJECTS")->setBackgroundColor(bg);
@@ -177,14 +177,20 @@ void ofApp::update() {
     box2d.update();
     
     
-
-    
-    
     gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
     
     particles.setParticleLifetime(s_particleLifeSpan ->getValue());
     particles.particleSystem->SetRadius(s_particleRadius->getValue());
     particles.particleSize = s_particleSize -> getValue();
+    
+    particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
+    
+    
+    b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
+    
+    
+    //Apply a force to all (or a selected part of) the particleSystem.
+//    particles.particleSystem->ApplyLinearImpulse(0, particles.particleSystem->GetParticleCount(), mouseF);
     
     
     
@@ -194,17 +200,15 @@ void ofApp::update() {
             pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
             
         } else {
-        
-        int hue = int(ofGetFrameNum() / gui->getSlider("HSB SPEED")->getValue()) % 255;
-        pColor.setHsb(hue, 180, 200);
+            
+            int hue = int(ofGetFrameNum() / gui->getSlider("HSB SPEED")->getValue()) % 255;
+            pColor.setHsb(hue, 180, 200);
             
         }
     }
     particles.setColor(ofColor(pColor));
     
     
-    
-    //Create particles from the top
     if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
         
         for (int i = 0; i < s_creationAmount->getValue(); i++) {
@@ -213,9 +217,8 @@ void ofApp::update() {
             float x = cos(ofRandom(PI * 2.0)) * radius + 500;
             float y = sin(ofRandom(PI * 2.0)) * radius + 50;
             
-            //ofVec2f position = ofVec2f(x, y);
-            //ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(100));
-            ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
+            //ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY));
+            ofVec2f position = ofVec2f(ofRandom(1920-280),ofRandom(creationLimitY));
             ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
             particles.createParticle(position, velocity);
         }
@@ -223,14 +226,18 @@ void ofApp::update() {
     }
     
     
+   
+    
+    
+    
     float noiseVal = 0;
-    float amplitude = 1.0;
-    float speed = 0.1;
+    float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
+    float speed =  gui->getSlider("NOISE SPEED")->getValue();
     float noisePos = 1000;
     
     
     //Fast noise
-    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed*7 + noisePos )-amplitude/4;
+    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
     
     //radiusNoise
     if (radiusNoise == true) {
@@ -245,11 +252,8 @@ void ofApp::update() {
             if ( m.getAddress() == "/temperature" ) {
                 ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/2;
-                }
                 
-                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
                 
                 if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
                     gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
@@ -260,19 +264,14 @@ void ofApp::update() {
             } else if ( m.getAddress() == "/windDirection" ) {
                 ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/4 )-amplitude/4;
-                }
-                
-                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+
+                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
                 
             } else if ( m.getAddress() == "/windSpeed" ) {
                 ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/2 )-amplitude/2;
-                }
-                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+
+                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
                 
                 if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
                     
@@ -285,9 +284,7 @@ void ofApp::update() {
                     p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
                     box2d.setGravity(p_gravityPad->getPoint());
                     
-                    
                 }
-                
             }
             
             
@@ -332,12 +329,13 @@ void ofApp::draw() {
     ofBackground(0);
     //ofDrawRectangle(boundsA); //Debug rectangle
     
+    if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
     ofSetColor(255, 40);
     ofNoFill();
     for (int i=0; i<edges.size(); i++) {
         edges[i].get()->draw();     //Draw hotel arrow
     }
-    
+    }
     
     for(int i=0; i<circles.size(); i++) {
         ofFill();
@@ -371,6 +369,11 @@ void ofApp::keyPressed(int key){
         circles.back().get()->setPhysics(0.9, 0.9, 0.1);
         circles.back().get()->setup(box2d.getWorld(), mouseX, mouseY, r);
     }
+    
+    if(key == 'f'){
+        ofToggleFullscreen();
+        box2d.setBounds(ofPoint(0,0), ofPoint(ofGetWidth(),ofGetHeight()));
+    }
 }
 
 
@@ -392,7 +395,7 @@ void ofApp::mouseDragged(int x, int y, int button) {
 
 
 
-//--------DatGui stuff-----------------------------------------------
+//--------DatGui -----------------------------------------------
 void ofApp::onButtonEvent(ofxDatGuiButtonEvent e)
 {
     cout << "onButtonEvent: " << e.target->getLabel() << endl;
@@ -475,22 +478,19 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
     string s =e.target->getLabel();
     
     if (e.target ==  d_weather) {
-
+        
         if (s== "WEATHER CODE: CLEAR") weatherType(0);
         if (s== "WEATHER CODE: CLOUDY") weatherType(1);
         if (s== "WEATHER CODE: RAIN") weatherType(2);
         if (s== "WEATHER CODE: SNOW") weatherType(3);
         if (s== "WEATHER CODE: STORM") weatherType(4);
         if (s== "WEATHER CODE: THUNDER") weatherType(5);
-
+        
     }
     
-    
     //Sloppy way to set particle flags, rewrite this
-    //string s =e.target->getLabel();
     
     if (s == "PARTICLE TYPE: WATER" || s == "WEATHER CODE: RAIN") {
-        gui->getDropdown("PARTICLE TYPE")->select(0); //Rain selects water particle
         particles.setParticleFlag(b2_waterParticle );
     }
     else if (s == "PARTICLE TYPE: WALL") {
@@ -503,14 +503,12 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
         particles.setParticleFlag(b2_elasticParticle );
     }
     else if (s == "PARTICLE TYPE: VISCOUS" || s == "WEATHER CODE: CLOUDY") {
-        gui->getDropdown("PARTICLE TYPE")->select(4); //Cloudy selects viscous particle
         particles.setParticleFlag(b2_viscousParticle );
     }
     else if (s == "PARTICLE TYPE: POWDER") {
         particles.setParticleFlag(b2_powderParticle );
     }
     else if (s == "PARTICLE TYPE: TENSILE" || s == "WEATHER CODE: CLEAR") {
-        gui->getDropdown("PARTICLE TYPE")->select(6); //Clear selects tensile particle
         particles.setParticleFlag(b2_tensileParticle );
     }
     else if (s == "PARTICLE TYPE: COLORMIXING") {
@@ -520,15 +518,12 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
         particles.setParticleFlag(b2_barrierParticle );
     }
     else if (s == "PARTICLE TYPE: STATICPRESSURE" || s=="WEATHER CODE: STORM") {
-        gui->getDropdown("PARTICLE TYPE")->select(9); //Storm selects static pressure particle
         particles.setParticleFlag(b2_staticPressureParticle );
     }
     else if (s == "PARTICLE TYPE: REACTIVE" || s == "WEATHER CODE: SNOW") {
-        gui->getDropdown("PARTICLE TYPE")->select(10); //Snow selects reactive particle
         particles.setParticleFlag(b2_reactiveParticle );
     }
     else if (s == "PARTICLE TYPE: REPULSIVE" || s == "WEATHER CODE: THUNDER") {
-        gui->getDropdown("PARTICLE TYPE")->select(11); //Thunder selects repulsive particle
         particles.setParticleFlag(b2_repulsiveParticle );
     }
 }
@@ -574,53 +569,53 @@ void ofApp::loadHotelArrow()
 }
 
 void ofApp:: weatherType(int index) {
-//    ofLog(OF_LOG_NOTICE, ofToString("/weatherTypeFunction " + ofToString(index)));
-    
     
     switch(index){
         case 0: //Clear weather
-            
             gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0xF7E359));
             s_particleLifeSpan ->setValue(120);
             s_creationAmount ->setValue(1);
             s_particleRadius->setValue(0.22);
             creationLimitY = ofGetHeight();
             radiusNoise = false;
-
+            gui->getDropdown("PARTICLE TYPE")->select(6); //Clear selects tensile particle
+            
             gui->get2dPad("VELOCITY")->reset();
             break;
             
         case 1: //Cloudy weather
-            
             gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x5D84CC));
             s_particleLifeSpan ->setValue(120);
             s_creationAmount ->setValue(3);
             s_particleRadius->setValue(0.22);
             creationLimitY = ofGetHeight();
             radiusNoise = false;
+            gui->getDropdown("PARTICLE TYPE")->select(4); //Cloudy selects viscous particle
             
             gui->get2dPad("VELOCITY")->reset();
             
             break;
             
         case 2: //Rain weather
-            
             gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0x0095FF));
             s_particleLifeSpan ->setValue(30);
             s_creationAmount ->setValue(8);
             s_particleRadius->setValue(0.22);
             creationLimitY = ofGetHeight()/4.0;
             radiusNoise = false;
-         
+            gui->getDropdown("PARTICLE TYPE")->select(0); //Rain selects water particle
+            
             break;
             
         case 3: //Snow weather
             gui->getColorPicker("PARTICLE COLOR")->setColor(ofColor::fromHex(0xF1FDFF));
             s_particleLifeSpan ->setValue(10);
-            s_creationAmount ->setValue(22);
-            s_particleRadius->setValue(0.2);
+            s_creationAmount ->setValue(8);
+            s_particleRadius->setValue(0.14);
+            s_particleSize->setValue(32.0);
             creationLimitY = ofGetHeight()/3.0;
             radiusNoise = false;
+            gui->getDropdown("PARTICLE TYPE")->select(10); //Snow selects reactive particle
             break;
             
         case 4: //Storm weather
@@ -630,7 +625,7 @@ void ofApp:: weatherType(int index) {
             s_particleRadius->setValue(0.22);
             creationLimitY = ofGetHeight();
             radiusNoise = true;
-
+            gui->getDropdown("PARTICLE TYPE")->select(9); //Storm selects static pressure particle
             break;
             
         case 5: //Thunder weather
@@ -640,7 +635,8 @@ void ofApp:: weatherType(int index) {
             s_particleRadius->setValue(0.22);
             creationLimitY = ofGetHeight();
             radiusNoise = true;
-
+            gui->getDropdown("PARTICLE TYPE")->select(11); //Thunder selects repulsive particle
+            gui->get2dPad("VELOCITY")->reset();
             break;
             
         default:
@@ -649,8 +645,6 @@ void ofApp:: weatherType(int index) {
     }
     
     pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
-    
-    
     
 }
 
