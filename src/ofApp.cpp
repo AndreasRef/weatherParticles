@@ -272,10 +272,10 @@ void ofApp::update() {
             } else if ( m.getAddress() == "/windSpeed" ) {
                 ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/2 )-amplitude/2;
-                }
-                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+//                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
+//                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/2 )-amplitude/2;
+//                }
+                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
                 
                 if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
                     

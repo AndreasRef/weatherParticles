@@ -43,6 +43,8 @@ float _windSpeed = 0;
 String _weatherType = "";
 int _rising = 0;
 int _counter = 0;
+int _groupedWeatherCode = 0;
+
 
 void setup() {
   font = createFont("arial.ttf", 14);
@@ -134,6 +136,8 @@ void draw() {
           
           int groupedWeatherCode = arrayCodes[weatherCode];
           
+          _groupedWeatherCode = groupedWeatherCode;
+          
           
           
           Lprintme("Weather Code: " + weatherCode, 20);
@@ -219,10 +223,12 @@ void draw() {
       "   windDirection: " + _windDirection + 
       "   windSpeed: " + _windSpeed + 
       "   weatherType: " + _weatherType +
+      "   groupedWeatherCode: " + _groupedWeatherCode +
       "   rising: " + _rising  +
       "   counter: " + _counter      
       );
 
+//_groupedWeatherCode
 
     //OSC send
     OscMessage t = new OscMessage("/temperature");
@@ -240,6 +246,11 @@ void draw() {
     OscMessage wt = new OscMessage("/weatherType");
     wt.add( _weatherType ); 
     oscP5.send(wt, sendAddress);
+    
+    OscMessage gwc = new OscMessage("/groupedWeatherCode");
+    gwc.add( int(_groupedWeatherCode) ); 
+    oscP5.send(gwc, sendAddress);
+    
 
     OscMessage r = new OscMessage("/rising");
     r.add( _rising ); 
