@@ -66,7 +66,7 @@ void ofApp::setup() {
     s_particleLifeSpan = gui->addSlider("LIFESPAN", 1, 120, 20);
     s_particleLifeSpan-> setBackgroundColor(bg);
     
-    s_creationAmount = gui->addSlider("CREATION AMOUNT", 1, 100, 20);
+    s_creationAmount = gui->addSlider("CREATION AMOUNT", 1, 100, 3);
     s_creationAmount-> setBackgroundColor(bg);
     
     s_creationRadius = gui->addSlider("CREATION RADIUS", 0, 200, 60);
@@ -80,6 +80,11 @@ void ofApp::setup() {
     
     s_particleSize = gui->addSlider("PARTICLE SIZE", 5, 64, 32);
     s_particleSize-> setBackgroundColor(bg);
+    
+    gui->addSlider("DAMPING", 0.0, 5.0,1.0);
+    
+    gui->addSlider("NOISE SPEED", 0.0, 5.0,0.8);
+    gui->addSlider("NOISE AMPLITUDE", 0.2, 3.0,1.0);
     
     
     vector<string> opts = {"Particle type: water", "Particle type: wall", "Particle type:  spring", "Particle type: elastic", "Particle type: viscous", "Particle type: powder","Particle type: tensile", "Particle type: colorMixing", "Particle type: barrier", "Particle type: staticPressure", "Particle type: reactive", "Particle type: repulsive"};
@@ -132,9 +137,6 @@ void ofApp::setup() {
     gui->addToggle("rising")->setBackgroundColor(bg);
     gui->getToggle("rising")->setStripeColor(stripe);
     
-    gui->addToggle("weather noise")->setBackgroundColor(bg);
-    gui->getToggle("weather noise")->setStripeColor(stripe);
-    
     
     
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
@@ -186,6 +188,15 @@ void ofApp::update() {
     particles.particleSystem->SetRadius(s_particleRadius->getValue());
     particles.particleSize = s_particleSize -> getValue();
     
+    particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
+    
+    
+    b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
+    
+    
+    //Apply a force to all (or a selected part of) the particleSystem.
+    //    particles.particleSystem->ApplyLinearImpulse(0, particles.particleSystem->GetParticleCount(), mouseF);
+    
     
     
     if (gui->getToggle("HSB CYCLE")->getChecked() == 1) {
@@ -224,13 +235,13 @@ void ofApp::update() {
     
     
     float noiseVal = 0;
-    float amplitude = 1.0;
-    float speed = 0.1;
+    float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
+    float speed =  gui->getSlider("NOISE SPEED")->getValue();
     float noisePos = 1000;
     
     
     //Fast noise
-    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed*7 + noisePos )-amplitude/4;
+    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
     
     //radiusNoise
     if (radiusNoise == true) {
@@ -245,26 +256,18 @@ void ofApp::update() {
             if ( m.getAddress() == "/temperature" ) {
                 ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/2;
-                }
                 
-                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
                 
                 if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
                     gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
                 }
                 
-                
-                
             } else if ( m.getAddress() == "/windDirection" ) {
                 ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
                 
-                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/4 )-amplitude/4;
-                }
                 
-                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 )+noiseVal);
+                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
                 
             } else if ( m.getAddress() == "/windSpeed" ) {
                 ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));

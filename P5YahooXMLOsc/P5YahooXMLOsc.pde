@@ -130,7 +130,7 @@ void draw() {
           //<yweather:condition xmlns:yweather="http://xml.weather.yahoo.com/ns/rss/1.0" code="26" date="Tue, 24 May 2016 02:00 PM CEST" temp="13" text="Cloudy"/>
           int weatherCode = myval.getInt("code");
           
-          int[]arrayCodes = {4,4,4,5,5,3,3,3,3,2,2,2,2,3,3,3,3,3,3,1,1,1,1,4,4,0,1,1,1,0,0,0,0,0,0,3,0,5,5,5,2,3,3,3,1,5,3,5,0};
+          int[]arrayCodes = {4,4,4,5,5,3,3,3,3,2,2,2,2,3,3,3,3,3,3,1,1,1,1,4,4,0,1,1,1,0,0,0,0,0,0,3,0,5,5,2,2,3,3,3,1,5,3,5,0};
           
           int groupedWeatherCode = arrayCodes[weatherCode];
           
