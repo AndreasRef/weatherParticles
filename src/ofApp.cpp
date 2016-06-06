@@ -13,7 +13,7 @@ void ofApp::setup() {
     box2d.registerGrabbing();
     box2d.createBounds(boundsA);
     
-    loadHotelArrow();
+    //loadHotelArrow();
     
     //Set initial values for global variables
     pColor.set(255);
@@ -29,6 +29,20 @@ void ofApp::setup() {
     
     //Osc
     oscReceiver.setup(12345);
+    
+    
+    //Sound
+    //Set up sound sample
+    //sound.loadSound( "song.mp3" );
+    sound.loadSound( "surface.wav" );
+    sound.setLoop( true );
+    sound.play();
+    
+    //Set spectrum values to 0
+    for (int i=0; i<N; i++) {
+        spectrum[i] = 0.0f;
+    }
+    
     
     
     //DatGui
@@ -80,10 +94,10 @@ void ofApp::setup() {
     gui->addSlider("OSCILLATOR OFFSET", 0, 0.6, 0.14);
     gui->addSlider("OSCILLATOR PERIOD", 5, 3000,250);
     
-    s_particleSize = gui->addSlider("PARTICLE SIZE", 1, 64, 32);
+    s_particleSize = gui->addSlider("PARTICLE SIZE", 1, 64, 10);
     s_particleSize-> setBackgroundColor(bg);
     
-    gui->addSlider("DAMPING", 0.0, 5.0,1.0);
+    //gui->addSlider("DAMPING", 0.0, 5.0,1.0);
     
     gui->addSlider("NOISE SPEED", 0.0, 5.0,0.8);
     gui->addSlider("NOISE AMPLITUDE", 0.2, 3.0,1.0);
@@ -102,7 +116,7 @@ void ofApp::setup() {
     
     gui->addColorPicker("PARTICLE COLOR", ofColor::fromHex(0xFFFFFF))->setStripeColor(stripe);
     gui->getColorPicker("PARTICLE COLOR")->setBackgroundColor(bg);
-    gui->addToggle("HSB CYCLE", true)->setStripeColor(stripe);
+    gui->addToggle("HSB CYCLE", FALSE)->setStripeColor(stripe);
     gui->getToggle("HSB CYCLE")->setBackgroundColor(bg);
     gui->addSlider("BLENDHSB",0.0,1.0,0.0)->setBackgroundColor(bg);
     gui->getSlider("BLENDHSB")->setStripeColor(stripe);
@@ -149,16 +163,13 @@ void ofApp::setup() {
     d_weather->select(0);
     d_weather->setBackgroundColor(ofColor::fromHex(0x5e6680));
     
-    
-    
-    
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
     //7) MISC
     stripe = ofColor::fromHex(0xF6F792);
     bg= ofColor::fromHex(0x7f804b);
     
-    gui->addToggle("HOTEL ARROW", true)->setStripeColor(stripe);
+    gui->addToggle("HOTEL ARROW", FALSE)->setStripeColor(stripe);
     gui->getToggle("HOTEL ARROW")->setBackgroundColor(bg);
     gui->addButton("CLEAR OBJECTS")->setStripeColor(stripe);
     gui->getButton("CLEAR OBJECTS")->setBackgroundColor(bg);
@@ -182,21 +193,20 @@ void ofApp::setup() {
 void ofApp::update() {
     box2d.update();
     
-    
-    
     gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
     
     particles.setParticleLifetime(s_particleLifeSpan ->getValue());
     particles.particleSystem->SetRadius(s_particleRadius->getValue());
     particles.particleSize = s_particleSize -> getValue();
     
-    particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
+    //particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
     
     
-    b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
+
     
     
     //Apply a force to all (or a selected part of) the particleSystem.
+        //b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
     //    particles.particleSystem->ApplyLinearImpulse(0, particles.particleSystem->GetParticleCount(), mouseF);
     
     
@@ -224,22 +234,25 @@ void ofApp::update() {
             ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
             ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
             particles.createParticle(position, velocity);
+            
+
         }
-        
     }
     
     
-    float noiseVal = 0;
-    float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
-    float speed =  gui->getSlider("NOISE SPEED")->getValue();
-    float noisePos = 1000;
-    
-    
-    //Fast noise
-    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
+
     
     //radiusNoise
     if (radiusNoise == true) {
+        float noiseVal = 0;
+        float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
+        float speed =  gui->getSlider("NOISE SPEED")->getValue();
+        float noisePos = 1000;
+        
+        
+        //Fast noise
+        noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
+        
         s_particleRadius->setValue(0.01 + noiseVal);
         
     }
@@ -280,9 +293,7 @@ void ofApp::update() {
             } else if ( m.getAddress() == "/windSpeed" ) {
                 ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
                 
-//                if (gui->getToggle("WEATHER NOISE") ->getChecked()==1) {
-//                    noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos/2 )-amplitude/2;
-//                }
+
                 gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
                 
 //                if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
@@ -331,6 +342,57 @@ void ofApp::update() {
     }
     
     
+    
+    
+    //Sound
+    
+    
+    
+    ofSoundUpdate();
+    if ( sound.isPlaying()==true) {
+    
+    //Get current spectrum with N bands
+    float *val = ofSoundGetSpectrum( N );
+    
+    //Update our smoothed spectrum,
+    //by slowly decreasing its values and getting maximum with val
+//    //So we will have slowly falling peaks in spectrum
+//    for ( int i=0; i<N; i++ ) {
+//        spectrum[i] *= 0.97;	//Slow decreasing
+//        spectrum[i] = max( spectrum[i], val[i] );
+//    }
+
+    spectrum[bandBass] *= 0.97;	//Slow decreasing
+    spectrum[bandBass] = max( spectrum[bandBass], val[bandBass] );
+    
+    spectrum[bandSnare] *= 0.99;	//Slow decreasing
+    spectrum[bandSnare] = max( spectrum[bandSnare], val[bandSnare] );
+    
+    
+    //Update particles using spectrum values
+    
+    //Computing dt as a time between the last
+    //and the current calling of update()
+    float time = ofGetElapsedTimef();
+    float dt = time - time0;
+    dt = ofClamp( dt, 0.0, 0.1 );
+    time0 = time; //Store the current time
+    
+    //Update Rad and Vel from spectrum
+    //Note, the parameters in ofMap's were tuned for best result
+    //just for current music track
+    gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 0.1, 0.4, true ));
+    gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 1, 20));
+    
+    //Reverse mapping
+//    gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 0.1, 0.6, true ));
+//    gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 1, 20, true ));
+    
+    
+    //Vel = ofMap( spectrum[ bandSnare ], 0, 0.1, 0.05, 0.5 );
+    
+    
+    }
 }
 
 
@@ -340,13 +402,15 @@ void ofApp::draw() {
     
     ofSetColor(255, 40);
     ofNoFill();
+    if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
     for (int i=0; i<edges.size(); i++) {
         edges[i].get()->draw();     //Draw hotel arrow
+    }
     }
     
     for(int i=0; i<circles.size(); i++) {
         ofFill();
-        ofSetHexColor(0xf6c738);
+        ofSetHexColor(0xFFFFFF);
         circles[i].get()->draw();
     }
     
@@ -401,6 +465,15 @@ void ofApp::keyPressed(int key){
         circles.push_back(ofPtr<ofxBox2dCircle>(new ofxBox2dCircle));
         circles.back().get()->setPhysics(0.9, 0.9, 0.1);
         circles.back().get()->setup(box2d.getWorld(), mouseX, mouseY, r);
+    }
+    
+    
+    if(key == 'p') {
+        if (sound.isPlaying()==true) {
+        sound.stop();
+        } else if (sound.isPlaying()==false) {
+        sound.play();
+        }
     }
 }
 

@@ -51,10 +51,22 @@ public:
     ofxDatGuiDropdown* d_weather;
     
 
-    
     //Global variables
     ofColor pColor;
     int creationLimitY;
     Boolean radiusNoise;
+
+    //Sound variables
+    
+    ofSoundPlayer sound;	//Sound sample
+    
+    const int N = 512;		//Number of bands in spectrum
+    //const int N = 28;		//Number of bands in spectrum
+    
+    float spectrum[ 512 ];	//Smoothed spectrum values
+    int bandBass = 2;		//Band index in spectrum, affecting Rad value
+    int bandSnare = 100;		//Band index in spectrum, affecting Vel value  
+    float time0 = 0;		//Time value, used for dt computing
+    
 
 };
