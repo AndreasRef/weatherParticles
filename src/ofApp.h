@@ -42,14 +42,14 @@ public:
     void onColorPickerEvent(ofxDatGuiColorPickerEvent e);
     
     ofxDatGuiSlider* s_particleLifeSpan;
-    ofxDatGuiSlider* s_creationSpread;
-    ofxDatGuiSlider* s_creationRadius;
+
     ofxDatGuiSlider* s_creationAmount;
     ofxDatGuiSlider* s_particleRadius;
     ofxDatGuiSlider* s_particleSize;
     
     ofxDatGui2dPad* p_gravityPad;
     ofxDatGuiDropdown* d_weather;
+    
 
     
     //Global variables

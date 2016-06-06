@@ -215,21 +215,23 @@ void draw() {
   //Lprintme("Sun is: " + risingCode[_rising], 20);
 
 
-  //Print our vars every 60th frame (not in the very beginning to avoid variables being zero)
-  if (frameCount % 60 == 1 && frameCount > 10) {
+  //Print our vars every 300th frame (not in the very beginning to avoid variables being zero)
+  if (frameCount % 300 == 1 && frameCount > 10) {
     
     println(
-      "temperature: " + _temperature +
-      "   windDirection: " + _windDirection + 
-      "   windSpeed: " + _windSpeed + 
-      "   weatherType: " + _weatherType +
-      "   groupedWeatherCode: " + _groupedWeatherCode +
-      "   rising: " + _rising  +
-      "   counter: " + _counter      
-      );
+     "temperature: " + _temperature +
+     "   windDirection: " + _windDirection + 
+     "   windSpeed: " + _windSpeed + 
+     "   weatherType: " + _weatherType +
+     "   groupedWeatherCode: " + _groupedWeatherCode +
+     "   rising: " + _rising  +
+     "   counter: " + _counter      
+     );
 
-//_groupedWeatherCode
 
+    //A boolean to control wheather osc data is being sent or not
+    //(Could in principle also be implemented in the OpenFrameworks sketch itself)
+    
     //OSC send
     OscMessage t = new OscMessage("/temperature");
     t.add( _temperature ); 
