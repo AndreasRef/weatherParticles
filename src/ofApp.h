@@ -50,11 +50,14 @@ public:
     ofxDatGui2dPad* p_gravityPad;
     ofxDatGuiDropdown* d_weather;
     
+    ofxDatGuiDropdown* d_mode;
+    
 
     //Global variables
     ofColor pColor;
     int creationLimitY;
     Boolean radiusNoise;
+    int mode = 0;
 
     //Sound variables
     

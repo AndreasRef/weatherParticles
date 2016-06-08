@@ -36,7 +36,7 @@ void ofApp::setup() {
     //sound.loadSound( "song.mp3" );
     sound.loadSound( "surface.wav" );
     sound.setLoop( true );
-    sound.play();
+    //sound.play();
     
     //Set spectrum values to 0
     for (int i=0; i<N; i++) {
@@ -62,8 +62,8 @@ void ofApp::setup() {
     ofColor stripe = ofColor::fromHex(0xffd00b);
     
     // gui->addToggle("WEATHER PARTICLE CONTROL", false)->setBackgroundColor(bg);
-
-
+    
+    
     
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
@@ -173,6 +173,15 @@ void ofApp::setup() {
     gui->getToggle("HOTEL ARROW")->setBackgroundColor(bg);
     gui->addButton("CLEAR OBJECTS")->setStripeColor(stripe);
     gui->getButton("CLEAR OBJECTS")->setBackgroundColor(bg);
+    gui->addToggle("MUSIC", FALSE)->setStripeColor(stripe);
+    gui->getToggle("MUSIC")->setBackgroundColor(bg);
+    
+    vector<string> modes = {"Particles", "Lines1", "Lines2", "Lines3"};
+    d_mode = gui->addDropdown("mode", modes);
+    d_mode->setBackgroundColor(bg);
+    d_mode->select(0);
+    
+    
     
     gui->addHeader(":: drag me to reposition ::");
     gui->addFooter();
@@ -191,260 +200,271 @@ void ofApp::setup() {
 
 //--------------------------------------------------------------
 void ofApp::update() {
-    box2d.update();
     
-    gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
-    
-    particles.setParticleLifetime(s_particleLifeSpan ->getValue());
-    particles.particleSystem->SetRadius(s_particleRadius->getValue());
-    particles.particleSize = s_particleSize -> getValue();
-    
-    //particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
-    
-    
-
-    
-    
-    //Apply a force to all (or a selected part of) the particleSystem.
-        //b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
-    //    particles.particleSystem->ApplyLinearImpulse(0, particles.particleSystem->GetParticleCount(), mouseF);
-    
-    
-    
-    if (gui->getToggle("HSB CYCLE")->getChecked() == 1) {
+    if(mode == 0){//PARTICLES MODE
         
-        if (ofRandom(1)>gui->getSlider("BLENDHSB")->getValue()) {
-            pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
             
-        } else {
-        
-        int hue = int(ofGetFrameNum() / gui->getSlider("HSB SPEED")->getValue()) % 255;
-        pColor.setHsb(hue, 180, 200);
+            box2d.update();
             
-        }
-    }
-    particles.setColor(ofColor(pColor));
-    
-    
-    
-    //Create particles from the top
-    if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
-        
-        for (int i = 0; i < s_creationAmount->getValue(); i++) {
-            ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
-            ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
-            particles.createParticle(position, velocity);
+            gui->getTextInput("Total particles")->setText(ofToString(particles.getParticleCount()));
             
-
-        }
-    }
-    
-    
-
-    
-    //radiusNoise
-    if (radiusNoise == true) {
-        float noiseVal = 0;
-        float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
-        float speed =  gui->getSlider("NOISE SPEED")->getValue();
-        float noisePos = 1000;
-        
-        
-        //Fast noise
-        noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
-        
-        s_particleRadius->setValue(0.01 + noiseVal);
-        
-    }
-    
-    if (gui->getToggle("RADIUS OSCILLATOR")->getChecked()==1) {
-        
-        float period = gui->getSlider("OSCILLATOR PERIOD")->getValue();
-        float amplitude = gui->getSlider("OSCILLATOR AMP")->getValue();
-        float offset = gui->getSlider("OSCILLATOR OFFSET")->getValue();
-        
-        float x = amplitude * cos(TWO_PI * ofGetFrameNum() / period)+offset;
-        
-        s_particleRadius->setValue(x);
-        
-        
-    }
-    
-    
-    //If manual weather is off -> Get weather from Osc messages
-    if (gui ->getToggle("API WEATHER")->getChecked() == 1) {
-        while ( oscReceiver.hasWaitingMessages() ) { ofxOscMessage m; oscReceiver.getNextMessage( &m );
-            if ( m.getAddress() == "/temperature" ) {
-                ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
+            particles.setParticleLifetime(s_particleLifeSpan ->getValue());
+            particles.particleSystem->SetRadius(s_particleRadius->getValue());
+            particles.particleSize = s_particleSize -> getValue();
+            
+            //particles.particleSystem->SetDamping(gui->getSlider("DAMPING")->getValue()); //Default damping is 1
+            
+            
+            //Apply a force to all (or a selected part of) the particleSystem.
+            //b2Vec2 mouseF = b2Vec2((ofGetMouseX()-ofGetWidth()/2.0)/20.0, (ofGetMouseY()-ofGetHeight()/2.0)/20.0);
+            //    particles.particleSystem->ApplyLinearImpulse(0, particles.particleSystem->GetParticleCount(), mouseF);
+            
+            
+            
+            if (gui->getToggle("HSB CYCLE")->getChecked() == 1) {
                 
-                
-                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
-                
-//                if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
-                    gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
-                //}
-                
-            } else if ( m.getAddress() == "/windDirection" ) {
-                ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
-                
-                
-                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
-                
-            } else if ( m.getAddress() == "/windSpeed" ) {
-                ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
-                
-
-                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
-                
-//                if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
-                
-                    float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-                    float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-                    float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
-                    gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
-                    box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
+                if (ofRandom(1)>gui->getSlider("BLENDHSB")->getValue()) {
+                    pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
                     
-                    p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
-                    box2d.setGravity(p_gravityPad->getPoint());
+                } else {
+                    
+                    int hue = int(ofGetFrameNum() / gui->getSlider("HSB SPEED")->getValue()) % 255;
+                    pColor.setHsb(hue, 180, 200);
+                    
+                }
+            }
+            particles.setColor(ofColor(pColor));
+            
+            
+            
+            //Create particles from the top
+            if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
+                
+                for (int i = 0; i < s_creationAmount->getValue(); i++) {
+                    ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
+                    ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
+                    particles.createParticle(position, velocity);
                     
                     
-                //}
+                }
+            }
+            
+            
+            
+            
+            //radiusNoise
+            if (radiusNoise == true) {
+                float noiseVal = 0;
+                float amplitude = gui->getSlider("NOISE AMPLITUDE")->getValue();
+                float speed =  gui->getSlider("NOISE SPEED")->getValue();
+                float noisePos = 1000;
+                
+                
+                //Fast noise
+                noiseVal = amplitude*ofNoise( ofGetElapsedTimef() * speed + noisePos )-amplitude/4;
+                
+                s_particleRadius->setValue(0.01 + noiseVal);
+                
+            }
+            
+            if (gui->getToggle("RADIUS OSCILLATOR")->getChecked()==1) {
+                
+                float period = gui->getSlider("OSCILLATOR PERIOD")->getValue();
+                float amplitude = gui->getSlider("OSCILLATOR AMP")->getValue();
+                float offset = gui->getSlider("OSCILLATOR OFFSET")->getValue();
+                
+                float x = amplitude * cos(TWO_PI * ofGetFrameNum() / period)+offset;
+                
+                s_particleRadius->setValue(x);
+                
                 
             }
             
             
-            else if ( m.getAddress() == "/groupedWeatherCode" ) {
-                ofLog(OF_LOG_NOTICE, ofToString("/groupedWeatherCode " + ofToString(m.getArgAsInt( 0 ))));
-                //
-                d_weather->select(m.getArgAsInt(0));
-                
-                //right mapping from weatherCodes to particle types
-                int mapping[] = {6,4,0,10,9,11};
-                
-                gui->getDropdown("particle type")->select(mapping[m.getArgAsInt(0)]);
-                
-                weatherType(m.getArgAsInt(0));
-                
+            //If manual weather is off -> Get weather from Osc messages
+            if (gui ->getToggle("API WEATHER")->getChecked() == 1) {
+                while ( oscReceiver.hasWaitingMessages() ) { ofxOscMessage m; oscReceiver.getNextMessage( &m );
+                    if ( m.getAddress() == "/temperature" ) {
+                        ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
+                        
+                        
+                        gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
+                        
+                        //                if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
+                        gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
+                        //}
+                        
+                    } else if ( m.getAddress() == "/windDirection" ) {
+                        ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
+                        
+                        
+                        gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
+                        
+                    } else if ( m.getAddress() == "/windSpeed" ) {
+                        ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
+                        
+                        
+                        gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
+                        
+                        //                if (gui->getToggle("Weather Particle Control")->getChecked()==1) {
+                        
+                        float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+                        float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+                        float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
+                        gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
+                        box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
+                        
+                        p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
+                        box2d.setGravity(p_gravityPad->getPoint());
+                        
+                        
+                        //}
+                        
+                    }
+                    
+                    
+                    else if ( m.getAddress() == "/groupedWeatherCode" ) {
+                        ofLog(OF_LOG_NOTICE, ofToString("/groupedWeatherCode " + ofToString(m.getArgAsInt( 0 ))));
+                        //
+                        d_weather->select(m.getArgAsInt(0));
+                        
+                        //right mapping from weatherCodes to particle types
+                        int mapping[] = {6,4,0,10,9,11};
+                        
+                        gui->getDropdown("particle type")->select(mapping[m.getArgAsInt(0)]);
+                        
+                        weatherType(m.getArgAsInt(0));
+                        
+                    }
+                    
+                    
+                    else if ( m.getAddress() == "/rising" ) {
+                        ofLog(OF_LOG_NOTICE, "/rising " + ofToString(m.getArgAsInt( 0 )));
+                        gui->getToggle("rising") -> setChecked(m.getArgAsInt( 0 ));
+                        //gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
+                        
+                    } else if ( m.getAddress() == "/counter" ) {
+                        
+                        ofLog(OF_LOG_NOTICE, "/counter " + ofToString(m.getArgAsInt( 0 )));
+                    }
+                    
+                }
             }
             
             
-            else if ( m.getAddress() == "/rising" ) {
-                ofLog(OF_LOG_NOTICE, "/rising " + ofToString(m.getArgAsInt( 0 )));
-                gui->getToggle("rising") -> setChecked(m.getArgAsInt( 0 ));
-                //gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
-                
-            } else if ( m.getAddress() == "/counter" ) {
-                
-                ofLog(OF_LOG_NOTICE, "/counter " + ofToString(m.getArgAsInt( 0 )));
-            }
             
-        }
+            
+            //Sound
+            
+            
+            
+            ofSoundUpdate();
+            if ( sound.isPlaying()==true) {
+                
+                //Get current spectrum with N bands
+                float *val = ofSoundGetSpectrum( N );
+                
+                //Update our smoothed spectrum,
+                //by slowly decreasing its values and getting maximum with val
+                //    //So we will have slowly falling peaks in spectrum
+                //    for ( int i=0; i<N; i++ ) {
+                //        spectrum[i] *= 0.97;	//Slow decreasing
+                //        spectrum[i] = max( spectrum[i], val[i] );
+                //    }
+                
+                spectrum[bandBass] *= 0.97;	//Slow decreasing
+                spectrum[bandBass] = max( spectrum[bandBass], val[bandBass] );
+                
+                spectrum[bandSnare] *= 0.99;	//Slow decreasing
+                spectrum[bandSnare] = max( spectrum[bandSnare], val[bandSnare] );
+                
+                
+                //Update particles using spectrum values
+                
+                //Computing dt as a time between the last
+                //and the current calling of update()
+                float time = ofGetElapsedTimef();
+                float dt = time - time0;
+                dt = ofClamp( dt, 0.0, 0.1 );
+                time0 = time; //Store the current time
+                
+                //Update Rad and Vel from spectrum
+                //Note, the parameters in ofMap's were tuned for best result
+                //just for current music track
+                gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 0.1, 0.4, true ));
+                gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 1, 20));
+                
+                //Reverse mapping
+                //    gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 0.1, 0.6, true ));
+                //    gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 1, 20, true ));
+                
+                
+                //Vel = ofMap( spectrum[ bandSnare ], 0, 0.1, 0.05, 0.5 );
+                
+                
+            }
+        
+    } else if(mode == 1){//LINES1 MODE
+        
+    } else if(mode == 2){//LINES2 MODE
+        
+    } else if(mode == 3){//LINES3 MODE
+        
     }
     
-    
-    
-    
-    //Sound
-    
-    
-    
-    ofSoundUpdate();
-    if ( sound.isPlaying()==true) {
-    
-    //Get current spectrum with N bands
-    float *val = ofSoundGetSpectrum( N );
-    
-    //Update our smoothed spectrum,
-    //by slowly decreasing its values and getting maximum with val
-//    //So we will have slowly falling peaks in spectrum
-//    for ( int i=0; i<N; i++ ) {
-//        spectrum[i] *= 0.97;	//Slow decreasing
-//        spectrum[i] = max( spectrum[i], val[i] );
-//    }
-
-    spectrum[bandBass] *= 0.97;	//Slow decreasing
-    spectrum[bandBass] = max( spectrum[bandBass], val[bandBass] );
-    
-    spectrum[bandSnare] *= 0.99;	//Slow decreasing
-    spectrum[bandSnare] = max( spectrum[bandSnare], val[bandSnare] );
-    
-    
-    //Update particles using spectrum values
-    
-    //Computing dt as a time between the last
-    //and the current calling of update()
-    float time = ofGetElapsedTimef();
-    float dt = time - time0;
-    dt = ofClamp( dt, 0.0, 0.1 );
-    time0 = time; //Store the current time
-    
-    //Update Rad and Vel from spectrum
-    //Note, the parameters in ofMap's were tuned for best result
-    //just for current music track
-    gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 0.1, 0.4, true ));
-    gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 1, 20));
-    
-    //Reverse mapping
-//    gui->getSlider("PARTICLE RADIUS")->setValue(ofMap( spectrum[ bandSnare ], 0, 0.2, 0.1, 0.6, true ));
-//    gui->getSlider("PARTICLE SIZE")->setValue(ofMap( spectrum[ bandBass ], 1, 3, 1, 20, true ));
-    
-    
-    //Vel = ofMap( spectrum[ bandSnare ], 0, 0.1, 0.05, 0.5 );
-    
-    
-    }
 }
-
 
 //--------------------------------------------------------------
 void ofApp::draw() {
     ofBackground(0);
     
-    ofSetColor(255, 40);
-    ofNoFill();
-    if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
-    for (int i=0; i<edges.size(); i++) {
-        edges[i].get()->draw();     //Draw hotel arrow
-    }
-    }
+    if (mode == 0) { //PARTICLES MODE
+            
+            ofSetColor(255, 40);
+            ofNoFill();
+            if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
+                for (int i=0; i<edges.size(); i++) {
+                    edges[i].get()->draw();     //Draw hotel arrow
+                }
+            }
+            
+            for(int i=0; i<circles.size(); i++) {
+                ofFill();
+                ofSetHexColor(0xFFFFFF);
+                circles[i].get()->draw();
+            }
+            
+            if (gui -> getToggle("BLENDMODE ADD") ->getChecked() == 1) ofEnableBlendMode(OF_BLENDMODE_ADD);
+            
+            particles.draw();
+            ofEnableBlendMode(OF_BLENDMODE_ALPHA);
     
-    for(int i=0; i<circles.size(); i++) {
+    } else if(mode == 1){//LINES1 MODE
+        ofPushMatrix();
+                        ofTranslate(100,300,0);
+                        ofSetHexColor(0x96D9AD);
         ofFill();
-        ofSetHexColor(0xFFFFFF);
-        circles[i].get()->draw();
-    }
-    
-    if (gui -> getToggle("BLENDMODE ADD") ->getChecked() == 1) ofEnableBlendMode(OF_BLENDMODE_ADD);
-    
-    particles.draw();
-    ofEnableBlendMode(OF_BLENDMODE_ALPHA);
-    
-    
-     //		use sin cos and time to make some spirally shape fun
-    
-    if (ofGetMousePressed()==1 && ofGetKeyPressed()) {
-    
-    ofPushMatrix();
-    ofTranslate(100,300,0);
-    ofSetHexColor(0x96D9AD);
-    ofFill();
-    ofSetPolyMode(OF_POLY_WINDING_ODD);
-    ofBeginShape();
-    float angleStep 	= TWO_PI/(100.0f + sin(ofGetElapsedTimef()/5.0f) * 60);
-    float radiusAdder 	= 0.5f;
-    float radius 		= 0;
-    for (int i = 0; i < 200; i++){
-        float anglef = (i) * angleStep;
-        float x = radius * cos(anglef);
-        float y = radius * sin(anglef);
-        ofVertex(x,y);
+        ofSetPolyMode(OF_POLY_WINDING_ODD);
+        ofBeginShape();
+        float angleStep 	= TWO_PI/(100.0f + sin(ofGetElapsedTimef()/5.0f) * 60);
+         float radiusAdder 	= 0.5f;
+        float radius = 0;
+        for (int i = 0; i < 200; i++){
+                            float anglef = (i) * angleStep;
+                            float x = radius * cos(anglef);
+                            float y = radius * sin(anglef);
+                            ofVertex(x,y);
         radius 	+= radiusAdder;
-    }
-    ofEndShape(OF_CLOSE);
-    ofPopMatrix();
+        }
+        ofEndShape(OF_CLOSE);
+        ofPopMatrix();
+        
+    } else if(mode == 2){//LINES2 MODE
+        
+    } else if(mode == 3){//LINES3 MODE
         
     }
-
+    
 }
 
 //--------------------------------------------------------------
@@ -467,14 +487,6 @@ void ofApp::keyPressed(int key){
         circles.back().get()->setup(box2d.getWorld(), mouseX, mouseY, r);
     }
     
-    
-    if(key == 'p') {
-        if (sound.isPlaying()==true) {
-        sound.stop();
-        } else if (sound.isPlaying()==false) {
-        sound.play();
-        }
-    }
 }
 
 
@@ -540,6 +552,15 @@ void ofApp::onToggleEvent(ofxDatGuiToggleEvent e)
             pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
         }
     }
+    
+    if (e.target->getLabel() == "MUSIC") {
+        if(gui->getToggle("MUSIC")->getChecked() == 0) {
+            sound.stop();
+            
+        } else if(gui->getToggle("MUSIC")->getChecked() == 1) {
+            sound.play();
+        }
+    }
 }
 
 
@@ -578,15 +599,35 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
     cout << "onDropdownEvent: " << e.target->getLabel() << " Selected" << endl;
     string s =e.target->getLabel();
     
+    
+    if (e.target ==  d_mode) {
+        
+        
+        if (s== "PARTICLES") {
+            mode = 0;
+        } else { //Destroy all particles and circles if particle mode not active
+            for(int i = 0; i<particles.particleSystem->GetParticleCount(); i++) {
+                particles.particleSystem->DestroyParticle(i);
+            }
+            
+            for(int i=0; i<circles.size(); i++) {
+                circles[i].get()->destroy();
+            }
+        }
+        if (s== "LINES1") { mode = 1; }
+        if (s== "LINES2") { mode = 2; }
+        if (s== "LINES3") { mode = 3; }
+    }
+    
     if (e.target ==  d_weather) {
-
+        
         if (s== "WEATHER CODE: CLEAR") weatherType(0);
         if (s== "WEATHER CODE: CLOUDY") weatherType(1);
         if (s== "WEATHER CODE: RAIN") weatherType(2);
         if (s== "WEATHER CODE: SNOW") weatherType(3);
         if (s== "WEATHER CODE: STORM") weatherType(4);
         if (s== "WEATHER CODE: THUNDER") weatherType(5);
-
+        
     }
     
     
@@ -678,7 +719,7 @@ void ofApp::loadHotelArrow()
 }
 
 void ofApp:: weatherType(int index) {
-//    ofLog(OF_LOG_NOTICE, ofToString("/weatherTypeFunction " + ofToString(index)));
+    //    ofLog(OF_LOG_NOTICE, ofToString("/weatherTypeFunction " + ofToString(index)));
     
     
     switch(index){
@@ -689,7 +730,7 @@ void ofApp:: weatherType(int index) {
             s_creationAmount ->setValue(1);
             creationLimitY = ofGetHeight();
             radiusNoise = false;
-
+            
             gui->get2dPad("VELOCITY")->reset();
             break;
             
@@ -714,7 +755,7 @@ void ofApp:: weatherType(int index) {
             radiusNoise = false;
             
             gui->get2dPad("VELOCITY")->setPoint(ofPoint(0,100));
-         
+            
             break;
             
         case 3: //Snow weather
@@ -734,7 +775,7 @@ void ofApp:: weatherType(int index) {
             s_creationAmount ->setValue(4);
             creationLimitY = ofGetHeight();
             radiusNoise = true;
-
+            
             break;
             
         case 5: //Thunder weather
@@ -743,7 +784,7 @@ void ofApp:: weatherType(int index) {
             s_creationAmount ->setValue(4);
             creationLimitY = ofGetHeight();
             radiusNoise = true;
-
+            
             break;
             
         default:
@@ -753,7 +794,7 @@ void ofApp:: weatherType(int index) {
     
     pColor.set(gui->getColorPicker("PARTICLE COLOR")->getColor());
     
-
+    
     
     
     
