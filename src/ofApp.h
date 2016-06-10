@@ -14,6 +14,9 @@ public:
     void setup();
     void update();
     void draw();
+    
+    void drawFbo(); //Fbo alpha
+    
     void keyPressed(int key);
     void mouseDragged(int x, int y, int button);
     void loadHotelArrow();
@@ -68,8 +71,18 @@ public:
     
     float spectrum[ 512 ];	//Smoothed spectrum values
     int bandBass = 2;		//Band index in spectrum, affecting Rad value
-    int bandSnare = 100;		//Band index in spectrum, affecting Vel value  
+    int bandSnare = 100;	//Band index in spectrum, affecting Vel value  
     float time0 = 0;		//Time value, used for dt computing
+    
+    
+    //Fading Fbo
+    ofFbo rgbaFboFloat;
+    
+    
+    //WindLines
+    float a = 0;
+    
+    float randomC();
     
 
 };
