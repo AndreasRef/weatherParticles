@@ -151,7 +151,6 @@ void ofApp::setup() {
     gui->getToggle("rising")->setStripeColor(stripe);
     
     
-    
     vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
     d_weather = gui->addDropdown("groupedWeatherCode", codes);
     d_weather->setStripeColor(ofColor::fromHex(0x2fa1d6));
@@ -171,7 +170,7 @@ void ofApp::setup() {
     gui->addToggle("MUSIC", FALSE)->setStripeColor(stripe);
     gui->getToggle("MUSIC")->setBackgroundColor(bg);
     
-    vector<string> modes = {"Particles", "Lines1", "Lines2", "Lines3"};
+    vector<string> modes = {"Particles", "FADINGTRAILS", "WINDLINES"};
     d_mode = gui->addDropdown("mode", modes);
     d_mode->setStripeColor(stripe);
     d_mode->setBackgroundColor(bg);
@@ -198,6 +197,14 @@ void ofApp::setup() {
     rgbaFboFloat.begin();
     ofClear(255,255,255, 0);
     rgbaFboFloat.end();
+    
+    
+    //fadingTrails
+    for (int i = 0; i<fadingTrailN; i++) {
+        xPos[i] = ofRandom(ofGetWidth()-272);
+        yPos[i] = ofRandom(ofGetHeight());
+        size[i] = ofRandom(3, 12);
+    }
     
 }
 
@@ -401,12 +408,25 @@ void ofApp::update() {
             
         }
         
-    } else if(mode == 1){//LINES1 MODE
+    } else if(mode == 1){//FADINGTRAILS MODE
+    
+        for (int i = 0; i<fadingTrailN; i++) {
+            
+            //xPos[i] += sin(radians(frameCount*3 + i*5))*amplitude + wind;
+            
+            xPos[i] += sin(TWO_PI * ofGetFrameNum() / period + i*50)*amplitude + wind;
+            if (xPos[i] > ofGetWidth()-272) xPos[i] = 0;
+            if (xPos[i] < 0) xPos[i] = ofGetWidth()-272;
+            
+            
+            yPos[i] +=1;
+            if (yPos[i] > ofGetHeight()) yPos[i] = 0;
+        }
         
-    } else if(mode == 2){//LINES2 MODE
         
-    } else if(mode == 3){//LINES3 MODE
         
+    } else if(mode == 2){//WINDLINES MODE
+    //Do nothing
     }
     
     
@@ -426,9 +446,11 @@ void ofApp::draw() {
     ofBackground(0);
     ofSetColor(255,255,255);
     
-    if (mode == 0) { //PARTICLES MODE
+    if (mode == 0 || mode == 1) { //PARTICLES MODE or FADING TRAILS MODE
         rgbaFboFloat.draw(0,0);
     }
+    
+    
     
     
     if (mode == 2) { //Wind Curtain
@@ -451,10 +473,10 @@ void ofApp::draw() {
         
         ofSetLineWidth(stroke);
         
-        for (int j=50; j<ofGetWidth()-50; j+=xDist) {
+        for (int j=50; j<ofGetWidth()-272 - 50; j+=xDist) {
             ofPolyline line;
             
-            for (int i=75; i<ofGetHeight()-150; i+=yDist) {
+            for (int i=50; i<ofGetHeight()-50; i+=yDist) {
                 
                 float step = sin(a)*(sin((450-i)*PI/400.0))*noiseMult;
                 float swing = j+step*(180.0*ofNoise(a+i/300.0, a+j/300.0, a/10.0)-90.0);
@@ -506,34 +528,34 @@ void ofApp::drawFbo(){
         particles.draw();
         ofEnableBlendMode(OF_BLENDMODE_ALPHA);
         
-    } else if(mode == 1){//LINES1 MODE
-        ofPushMatrix();
-        ofTranslate(100,300,0);
-        ofSetHexColor(0x96D9AD);
-        ofFill();
-        ofSetPolyMode(OF_POLY_WINDING_ODD);
-        ofBeginShape();
-        float angleStep 	= TWO_PI/(100.0f + sin(ofGetElapsedTimef()/5.0f) * 60);
-        float radiusAdder 	= 0.5f;
-        float radius = 0;
-        for (int i = 0; i < 200; i++){
-            float anglef = (i) * angleStep;
-            float x = radius * cos(anglef);
-            float y = radius * sin(anglef);
-            ofVertex(x,y);
-            radius 	+= radiusAdder;
+    } else if(mode == 1){//FADINGTRAILS MODE
+//        ofPushMatrix();
+//        ofTranslate(100,300,0);
+//        ofSetHexColor(0x96D9AD);
+//        ofFill();
+//        ofSetPolyMode(OF_POLY_WINDING_ODD);
+//        ofBeginShape();
+//        float angleStep 	= TWO_PI/(100.0f + sin(ofGetElapsedTimef()/5.0f) * 60);
+//        float radiusAdder 	= 0.5f;
+//        float radius = 0;
+//        for (int i = 0; i < 200; i++){
+//            float anglef = (i) * angleStep;
+//            float x = radius * cos(anglef);
+//            float y = radius * sin(anglef);
+//            ofVertex(x,y);
+//            radius 	+= radiusAdder;
+//        }
+//        ofEndShape(OF_CLOSE);
+//        ofPopMatrix();
+        
+        ofSetHexColor(0xFFFFFF);
+    
+        for (int i = 0; i<fadingTrailN; i++) {
+            ofCircle(xPos[i], yPos[i], size[i]);
         }
-        ofEndShape(OF_CLOSE);
-        ofPopMatrix();
         
-    } else if(mode == 2){//LINES2 MODE
-        
-        
-        
-        
-        
-    } else if(mode == 3){//LINES3 MODE
-        
+    } else if(mode == 2){//WINDLINES MODE
+       //Do nothing - this is drawn directly in the draw function
     }
     
     
@@ -692,9 +714,9 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
                 circles[i].get()->destroy();
             }
         }
-        if (s== "LINES1") { mode = 1; }
-        if (s== "LINES2") { mode = 2; }
-        if (s== "LINES3") { mode = 3; }
+        if (s== "FADINGTRAILS") { mode = 1; }
+        if (s== "WINDLINES") { mode = 2; }
+
     }
     
     if (e.target ==  d_weather) {
@@ -878,4 +900,3 @@ void ofApp:: weatherType(int index) {
     
     
 }
-

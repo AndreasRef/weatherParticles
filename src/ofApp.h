@@ -84,5 +84,18 @@ public:
     
     float randomC();
     
+    
+    //Fading trails
+    float fadeSpeed = 2.0;
+    float wind = 0.0;
+    float amplitude = 0.5;
+    int period = 125;
+    
+    
+    int fadingTrailN = 300;
+    float xPos[300];
+    float yPos[300];
+    float size[300];
+    
 
 };
