@@ -205,7 +205,6 @@ void ofApp::setup() {
         yPos[i] = ofRandom(ofGetHeight());
         size[i] = ofRandom(3, 12);
     }
-    
 }
 
 
@@ -213,8 +212,79 @@ void ofApp::setup() {
 //--------------------------------------------------------------
 void ofApp::update() {
     
+    
+    //GLOBAL API WEATHER UPDATE (for all three modes)
+    
+    //If manual weather is off -> Get weather from Osc messages
+    if (gui ->getToggle("API WEATHER")->getChecked() == 1) {
+        while ( oscReceiver.hasWaitingMessages() ) { ofxOscMessage m; oscReceiver.getNextMessage( &m );
+            if ( m.getAddress() == "/temperature" ) {
+                ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
+                
+                
+                gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
+                
+                
+                gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
+                
+            } else if ( m.getAddress() == "/windDirection" ) {
+                ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
+                
+                
+                gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
+                
+            } else if ( m.getAddress() == "/windSpeed" ) {
+                ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
+                
+                
+                gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
+                
+                
+                float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+                float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
+                float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
+                gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
+                box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
+                
+                p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
+                box2d.setGravity(p_gravityPad->getPoint());
+                
+                
+                
+            }
+            
+            
+            else if ( m.getAddress() == "/groupedWeatherCode" ) {
+                ofLog(OF_LOG_NOTICE, ofToString("/groupedWeatherCode " + ofToString(m.getArgAsInt( 0 ))));
+                //
+                d_weather->select(m.getArgAsInt(0));
+                
+                //right mapping from weatherCodes to particle types
+                int mapping[] = {6,4,0,10,9,11};
+                
+                gui->getDropdown("particle type")->select(mapping[m.getArgAsInt(0)]);
+                
+                weatherType(m.getArgAsInt(0));
+                
+            }
+            
+            
+            else if ( m.getAddress() == "/rising" ) {
+                ofLog(OF_LOG_NOTICE, "/rising " + ofToString(m.getArgAsInt( 0 )));
+                gui->getToggle("rising") -> setChecked(m.getArgAsInt( 0 ));
+                //gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
+                
+            } else if ( m.getAddress() == "/counter" ) {
+                
+                ofLog(OF_LOG_NOTICE, "/counter " + ofToString(m.getArgAsInt( 0 )));
+            }
+            
+        }
+    }
+    
+    
+    
     if(mode == 0){//PARTICLES MODE
-        
         
         box2d.update();
         
@@ -292,72 +362,7 @@ void ofApp::update() {
         }
         
         
-        //If manual weather is off -> Get weather from Osc messages
-        if (gui ->getToggle("API WEATHER")->getChecked() == 1) {
-            while ( oscReceiver.hasWaitingMessages() ) { ofxOscMessage m; oscReceiver.getNextMessage( &m );
-                if ( m.getAddress() == "/temperature" ) {
-                    ofLog(OF_LOG_NOTICE, "/temperature " + ofToString(m.getArgAsInt( 0 )));
-                    
-                    
-                    gui->getSlider("temperature") -> setValue(m.getArgAsInt( 0 ));
-                    
-                    
-                    gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("temperature") ->getValue(),-15,50,5,50));
-                    
-                } else if ( m.getAddress() == "/windDirection" ) {
-                    ofLog(OF_LOG_NOTICE, "/windDirection " + ofToString(m.getArgAsInt( 0 )));
-                    
-                    
-                    gui->getSlider("windDirection") -> setValue(m.getArgAsInt( 0 ));
-                    
-                } else if ( m.getAddress() == "/windSpeed" ) {
-                    ofLog(OF_LOG_NOTICE, "/windSpeed " + ofToString(m.getArgAsInt( 0 )));
-                    
-                    
-                    gui->getSlider("windSpeed") -> setValue(m.getArgAsInt( 0 ));
-                    
-                    
-                    float x = cos(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-                    float y = sin(ofDegToRad(gui->getSlider("windDirection")->getValue()+90));
-                    float scalar = ofMap(gui->getSlider("windSpeed")->getValue(),0,100,0,1);
-                    gui ->get2dPad("GRAVITY")->setPoint(ofPoint(x*scalar,y*scalar));
-                    box2d.setGravity(gui ->get2dPad("GRAVITY")->getPoint());
-                    
-                    p_gravityPad->setPoint(ofPoint(x*scalar,y*scalar));
-                    box2d.setGravity(p_gravityPad->getPoint());
-                    
-                    
-                    
-                }
-                
-                
-                else if ( m.getAddress() == "/groupedWeatherCode" ) {
-                    ofLog(OF_LOG_NOTICE, ofToString("/groupedWeatherCode " + ofToString(m.getArgAsInt( 0 ))));
-                    //
-                    d_weather->select(m.getArgAsInt(0));
-                    
-                    //right mapping from weatherCodes to particle types
-                    int mapping[] = {6,4,0,10,9,11};
-                    
-                    gui->getDropdown("particle type")->select(mapping[m.getArgAsInt(0)]);
-                    
-                    weatherType(m.getArgAsInt(0));
-                    
-                }
-                
-                
-                else if ( m.getAddress() == "/rising" ) {
-                    ofLog(OF_LOG_NOTICE, "/rising " + ofToString(m.getArgAsInt( 0 )));
-                    gui->getToggle("rising") -> setChecked(m.getArgAsInt( 0 ));
-                    //gui->getSlider("rising") -> setValue(m.getArgAsInt( 0 ));
-                    
-                } else if ( m.getAddress() == "/counter" ) {
-                    
-                    ofLog(OF_LOG_NOTICE, "/counter " + ofToString(m.getArgAsInt( 0 )));
-                }
-                
-            }
-        }
+
         
         
         
@@ -409,10 +414,21 @@ void ofApp::update() {
         }
         
     } else if(mode == 1){//FADINGTRAILS MODE
-    
+        
+        wind = ofMap(gui->getSlider("WindSpeed")->getValue(),0,100,0,1.2);
+        
+        if (gui->getSlider("WindDirection")->getValue()<180) {
+            wind *=-1; //Reverse direction for wind based on wind direction
+            
+        }
+        
+
         for (int i = 0; i<fadingTrailN; i++) {
             
             //xPos[i] += sin(radians(frameCount*3 + i*5))*amplitude + wind;
+            
+            
+            
             
             xPos[i] += sin(TWO_PI * ofGetFrameNum() / period + i*50)*amplitude + wind;
             if (xPos[i] > ofGetWidth()-272) xPos[i] = 0;
@@ -451,20 +467,16 @@ void ofApp::draw() {
     }
     
     
-    
-    
     if (mode == 2) { //Wind Curtain
         ofSetHexColor(0xFFFFFF);
         //ofFill();
         
         //(global) variables
-        float noiseSteps = 5;
-        float noiseMult = 1.0;
-        int noiseDetails = 4;
-        float noiseFallOfff = 0.5;
+        //int noiseSteps = 5; // Defined in ofApp.h
+        float noiseMult = ofMap(gui->getSlider("windspeed")->getValue(),0,100,0.01,4.0);
         
-        int stroke = 4;
-        int xDist = 25;
+        int stroke = ofMap(gui->getSlider("temperature")->getValue(),-20,35,1.0,8.0);
+        //int xDist = 25; // Defined in ofApp.h
         int yDist = 50;
         
         
@@ -673,6 +685,10 @@ void ofApp::onSliderEvent(ofxDatGuiSliderEvent e)
     
     if (e.target->getLabel() == "TEMPERATURE") {
         gui->getSlider("PARTICLE SIZE") -> setValue(ofMap(gui->getSlider("TEMPERATURE") ->getValue(),-15,50,5,50));
+        
+                if (mode==1) { //FadingTrailsmode
+                 gui->getSlider("FADEBACKGROUND")->setValue(ofMap(gui->getSlider("TEMPERATURE")->getValue(),-20,35,1,20));
+                }
     }
     if (e.target->getLabel()=="WINDDIRECTION" || e.target->getLabel()=="WINDSPEED") {
         
@@ -721,12 +737,12 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
     
     if (e.target ==  d_weather) {
         
-        if (s== "WEATHER CODE: CLEAR") weatherType(0);
-        if (s== "WEATHER CODE: CLOUDY") weatherType(1);
-        if (s== "WEATHER CODE: RAIN") weatherType(2);
-        if (s== "WEATHER CODE: SNOW") weatherType(3);
-        if (s== "WEATHER CODE: STORM") weatherType(4);
-        if (s== "WEATHER CODE: THUNDER") weatherType(5);
+        if (s== "WEATHER CODE: CLEAR") {weatherType(0);  xDist = 10; noiseSteps = 6;}
+        if (s== "WEATHER CODE: CLOUDY") {weatherType(1);  xDist = 20; noiseSteps = 5;}
+        if (s== "WEATHER CODE: RAIN") {weatherType(2);  xDist = 30; noiseSteps = 4;}
+        if (s== "WEATHER CODE: SNOW") {weatherType(3);  xDist = 40; noiseSteps = 3;}
+        if (s== "WEATHER CODE: STORM") {weatherType(4);  xDist = 20; noiseSteps = 2;}
+        if (s== "WEATHER CODE: THUNDER") {weatherType(5);  xDist = 10; noiseSteps = 10;}
         
     }
     

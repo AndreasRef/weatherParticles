@@ -84,6 +84,9 @@ public:
     
     float randomC();
     
+    int xDist = 25;
+    int noiseSteps = 5;
+    
     
     //Fading trails
     float fadeSpeed = 2.0;
