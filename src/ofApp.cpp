@@ -6,7 +6,7 @@ void ofApp::setup() {
     ofBackgroundHex(0x00000);
     ofSetLogLevel(OF_LOG_NOTICE);
     
-    boundsA.set(0, 0, ofGetWidth()-272, ofGetHeight());
+    boundsA.set(0, 0, ofGetWidth(), ofGetHeight());
     box2d.init();
     box2d.setGravity(0, 0);
     box2d.setFPS(30.0);
@@ -14,6 +14,7 @@ void ofApp::setup() {
     box2d.createBounds(boundsA);
     
     //loadHotelArrow();
+    arrow.load("arrow.png");
     
     //Set initial values for global variables
     pColor.set(255);
@@ -61,7 +62,7 @@ void ofApp::setup() {
     ofColor stripe = ofColor::fromHex(0xffd00b);
     
     
-    gui->addBreak(); gui->addBreak(); gui->addBreak();
+    //gui->addBreak();
     
     //3) Particle controls
     bg= ofColor::fromHex(0x113a4d);
@@ -75,6 +76,7 @@ void ofApp::setup() {
     
     gui->addToggle("MOUSE CREATION", FALSE)->setBackgroundColor(bg);
     gui->getToggle("MOUSE CREATION")->setStripeColor(stripe);
+    gui->getToggle("MOUSE CREATION")->setVisible(false); //Hide this for now
     
     s_particleLifeSpan = gui->addSlider("LIFESPAN", 1, 120, 20);
     s_particleLifeSpan-> setBackgroundColor(bg);
@@ -86,9 +88,9 @@ void ofApp::setup() {
     
     
     gui->addToggle("RADIUS OSCILLATOR", FALSE)->setStripeColor(stripe);
-    gui->addSlider("OSCILLATOR AMP", 0, 0.30,0.14);
-    gui->addSlider("OSCILLATOR OFFSET", 0, 0.6, 0.14);
-    gui->addSlider("OSCILLATOR PERIOD", 5, 3000,250);
+    gui->addSlider("OSCILLATOR AMP", 0, 0.30,0.14)->setVisible(false); //Hide this for now
+    gui->addSlider("OSCILLATOR OFFSET", 0, 0.6, 0.14)->setVisible(false); //Hide this for now
+    gui->addSlider("OSCILLATOR PERIOD", 5, 3000,250)->setVisible(false); //Hide this for now
     
     s_particleSize = gui->addSlider("PARTICLE SIZE", 1, 64, 10);
     
@@ -107,15 +109,19 @@ void ofApp::setup() {
     //4) Particle color & blend
     stripe = ofColor::fromHex(0xDAEDE2);
     bg= ofColor::fromHex(0x4d5450);
-    
+
     gui->addColorPicker("PARTICLE COLOR", ofColor::fromHex(0xFFFFFF))->setStripeColor(stripe);
     gui->getColorPicker("PARTICLE COLOR")->setBackgroundColor(bg);
+    gui->getColorPicker("PARTICLE COLOR")->setVisible(false);  //Hide this for now
     gui->addToggle("HSB CYCLE", FALSE)->setStripeColor(stripe);
     gui->getToggle("HSB CYCLE")->setBackgroundColor(bg);
+    gui->getToggle("HSB CYCLE")->setVisible(false); //Hide this for now
     gui->addSlider("BLENDHSB",0.0,1.0,0.0)->setBackgroundColor(bg);
     gui->getSlider("BLENDHSB")->setStripeColor(stripe);
+    gui->getSlider("BLENDHSB")->setVisible(false);  //Hide this for now
     gui->addSlider("HSB SPEED",0.1,100,10)->setBackgroundColor(bg);
     gui->getSlider("HSB SPEED")->setStripeColor(stripe);
+    gui->getSlider("HSB SPEED")->setVisible(false);  //Hide this for now
     gui->addToggle("BLENDMODE ADD", true)->setStripeColor(stripe);
     gui->getToggle("BLENDMODE ADD")->setBackgroundColor(bg);
     
@@ -145,7 +151,7 @@ void ofApp::setup() {
     
     gui->addSlider("windDirection", 0, 360, 0)->setBackgroundColor(bg);
     
-    gui->addSlider("windSpeed", 0, 100, 0)->setBackgroundColor(bg);
+    gui->addSlider("windSpeed", 0, 100, 10)->setBackgroundColor(bg);
     
     gui->addToggle("rising")->setBackgroundColor(bg);
     gui->getToggle("rising")->setStripeColor(stripe);
@@ -179,6 +185,9 @@ void ofApp::setup() {
     gui->addSlider("fadeBackground", 0, 255)->setStripeColor(stripe);
     gui->getSlider("fadeBackground")->setBackgroundColor(bg);
     
+    gui->addToggle("SYPHON", FALSE)->setStripeColor(stripe);
+    gui->getToggle("SYPHON")->setBackgroundColor(bg);
+    
     gui->addHeader(":: drag me to reposition ::");
     gui->addFooter();
     
@@ -192,7 +201,7 @@ void ofApp::setup() {
     
     
     //fboFade
-    rgbaFboFloat.allocate(1280, 1400, GL_RGBA32F_ARB);
+    rgbaFboFloat.allocate(1920, 1080, GL_RGBA32F_ARB);
     
     rgbaFboFloat.begin();
     ofClear(255,255,255, 0);
@@ -201,7 +210,7 @@ void ofApp::setup() {
     
     //fadingTrails
     for (int i = 0; i<fadingTrailN; i++) {
-        xPos[i] = ofRandom(ofGetWidth()-272);
+        xPos[i] = ofRandom(ofGetWidth());
         yPos[i] = ofRandom(ofGetHeight());
         size[i] = ofRandom(3, 12);
     }
@@ -323,7 +332,7 @@ void ofApp::update() {
         if (gui ->getToggle("MOUSE CREATION")->getChecked() == 0) {
             
             for (int i = 0; i < s_creationAmount->getValue(); i++) {
-                ofVec2f position = ofVec2f(ofRandom(1000),ofRandom(creationLimitY)); //totally random position
+                ofVec2f position = ofVec2f(ofRandom(ofGetWidth()),ofRandom(creationLimitY)); //totally random position
                 ofVec2f velocity = ofVec2f(gui->get2dPad("VELOCITY")->getPoint());
                 particles.createParticle(position, velocity);
                 
@@ -431,8 +440,8 @@ void ofApp::update() {
             
             
             xPos[i] += sin(TWO_PI * ofGetFrameNum() / period + i*50)*amplitude + wind;
-            if (xPos[i] > ofGetWidth()-272) xPos[i] = 0;
-            if (xPos[i] < 0) xPos[i] = ofGetWidth()-272;
+            if (xPos[i] > ofGetWidth()) xPos[i] = 0;
+            if (xPos[i] < 0) xPos[i] = ofGetWidth();
             
             
             yPos[i] +=1;
@@ -485,7 +494,7 @@ void ofApp::draw() {
         
         ofSetLineWidth(stroke);
         
-        for (int j=50; j<ofGetWidth()-272 - 50; j+=xDist) {
+        for (int j=50; j<ofGetWidth() - 50; j+=xDist) {
             ofPolyline line;
             
             for (int i=50; i<ofGetHeight()-50; i+=yDist) {
@@ -517,17 +526,12 @@ void ofApp::drawFbo(){
     ofFill();
     ofSetColor(0,gui->getSlider("fadeBackground")->getValue());
     
-    ofDrawRectangle(0,0,1280, 1400); //Fade Fbo
+    ofDrawRectangle(0,0,ofGetWidth(), ofGetHeight()); //Fade Fbo
     
     if (mode == 0) { //PARTICLES MODE
         
-        ofSetColor(255, 40);
-        ofNoFill();
-        if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
-            for (int i=0; i<edges.size(); i++) {
-                edges[i].get()->draw();     //Draw hotel arrow
-            }
-        }
+
+
         
         for(int i=0; i<circles.size(); i++) {
             ofFill();
@@ -539,6 +543,20 @@ void ofApp::drawFbo(){
         
         particles.draw();
         ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+        
+        ofSetColor(255, 40);
+        ofFill();
+        if (gui->getToggle("HOTEL ARROW")->getChecked()==1) {
+            for (int i=0; i<edges.size(); i++) {
+                edges[i].get()->draw();     //Draw hotel arrow
+            }
+            ofSetColor(255);
+            arrow.draw(0, 0);
+
+        }
+
+//        if (gui->getToggle("Hotel Arrow")->getChecked()==1) arrow.draw(0, 0);
+        
         
     } else if(mode == 1){//FADINGTRAILS MODE
 //        ofPushMatrix();
@@ -599,6 +617,15 @@ void ofApp::keyPressed(int key){
         circles.push_back(ofPtr<ofxBox2dCircle>(new ofxBox2dCircle));
         circles.back().get()->setPhysics(0.9, 0.9, 0.1);
         circles.back().get()->setup(box2d.getWorld(), mouseX, mouseY, r);
+    }
+    
+    if(key == 'g') {
+        
+        if (gui->getVisible()==true) {
+        gui->setVisible(false);
+        } else {
+          gui->setVisible(true);
+        }
     }
     
 }
@@ -731,7 +758,10 @@ void ofApp::onDropdownEvent(ofxDatGuiDropdownEvent e)
             }
         }
         if (s== "FADINGTRAILS") { mode = 1; }
-        if (s== "WINDLINES") { mode = 2; }
+        if (s== "WINDLINES") {
+            mode = 2;
+           // gui->getSlider("WindSpeed")->setValue(10);
+        }
 
     }
     
@@ -825,7 +855,7 @@ void ofApp::loadHotelArrow()
                 if(pts[j].size() > 0) {
                     float x = ofToFloat(pts[j]);
                     float y = ofToFloat(pts[j+1]);
-                    edge.get()->addVertex(x, y);
+                    edge.get()->addVertex(x, y-50); //Sloppy way of positioning the arrow a bit higher
                 }
             }
             edge.get()->create(box2d.getWorld());

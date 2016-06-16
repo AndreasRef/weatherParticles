@@ -100,5 +100,8 @@ public:
     float yPos[300];
     float size[300];
     
+    //Arrow
+    ofImage arrow;
+    
 
 };
