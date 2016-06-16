@@ -51,6 +51,7 @@ void ofApp::setup() {
     ofColor bg= ofColor::fromHex(0x0c542c);
     
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
+    gui->setOpacity(.05);
     //gui->setTheme(new ofxDatGuiThemeSmoke());
     gui->addFRM()->setBackgroundColor(bg);
     gui->addTextInput("Total particles")->setBackgroundColor(bg);
@@ -140,30 +141,6 @@ void ofApp::setup() {
     gui->addBreak(); gui->addBreak(); gui->addBreak();
     
     
-    //6) Weather parameters
-    stripe = ofColor::fromHex(0x2fa1d6);
-    bg= ofColor::fromHex(0x5e6680);
-    
-    gui->addToggle("API WEATHER",FALSE)->setBackgroundColor(bg);
-    gui->getToggle("API WEATHER")->setStripeColor(stripe);
-    
-    gui->addSlider("temperature", -20, 50)->setBackgroundColor(bg);
-    
-    gui->addSlider("windDirection", 0, 360, 0)->setBackgroundColor(bg);
-    
-    gui->addSlider("windSpeed", 0, 100, 10)->setBackgroundColor(bg);
-    
-    gui->addToggle("rising")->setBackgroundColor(bg);
-    gui->getToggle("rising")->setStripeColor(stripe);
-    
-    
-    vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
-    d_weather = gui->addDropdown("groupedWeatherCode", codes);
-    d_weather->setStripeColor(ofColor::fromHex(0x2fa1d6));
-    d_weather->select(0);
-    d_weather->setBackgroundColor(ofColor::fromHex(0x5e6680));
-    
-    gui->addBreak(); gui->addBreak(); gui->addBreak();
     
     //7) MISC
     stripe = ofColor::fromHex(0xF6F792);
@@ -188,8 +165,40 @@ void ofApp::setup() {
     gui->addToggle("SYPHON", FALSE)->setStripeColor(stripe);
     gui->getToggle("SYPHON")->setBackgroundColor(bg);
     
-    gui->addHeader(":: drag me to reposition ::");
-    gui->addFooter();
+       gui->addBreak(); gui->addBreak(); gui->addBreak();
+    
+    //6) Weather parameters
+    stripe = ofColor::fromHex(0x2fa1d6);
+    bg= ofColor::fromHex(0x5e6680);
+    
+    
+    gui->addToggle("API WEATHER",FALSE)->setBackgroundColor(bg);
+    gui->getToggle("API WEATHER")->setStripeColor(stripe);
+    
+    vector<string> codes = {"Weather code: clear", "Weather code: cloudy", "Weather code: rain", "Weather code: snow", "Weather code: storm", "Weather code: thunder"};
+    d_weather = gui->addDropdown("groupedWeatherCode", codes);
+    d_weather->setStripeColor(ofColor::fromHex(0x2fa1d6));
+    d_weather->select(0);
+    d_weather->setBackgroundColor(ofColor::fromHex(0x5e6680));
+    
+    gui->addSlider("temperature", -20, 50)->setBackgroundColor(bg);
+    
+    gui->addSlider("windDirection", 0, 360, 0)->setBackgroundColor(bg);
+    
+    gui->addSlider("windSpeed", 0, 100, 10)->setBackgroundColor(bg);
+    
+    gui->addToggle("rising")->setBackgroundColor(bg);
+    gui->getToggle("rising")->setStripeColor(stripe);
+    
+    
+
+    
+ 
+    
+
+    
+//    gui->addHeader(":: drag me to reposition ::");
+//    gui->addFooter();
     
     // register callbacks to listen for component specific events //
     gui->onButtonEvent(this, &ofApp::onButtonEvent);
@@ -523,6 +532,7 @@ void ofApp::draw() {
             
             line.draw();
         }
+        ofSetLineWidth(1);
         
     }
     
@@ -531,6 +541,52 @@ void ofApp::draw() {
 //        mainOutputSyphonServer.publishScreen();
 //    }
 
+    
+//    if (gui->getVisible()==true) showWind(gui->getSlider("Winddirection")->getValue());
+    if (gui->getVisible()==true) {
+        ofFill();
+        ofSetColor(26,242);
+        ofDrawRectangle(ofGetWidth()-272, 0, 272, ofGetHeight());
+        
+        showWind();
+        
+    }
+//    
+}
+
+
+void ofApp::showWind() {
+    ofSetColor(255);
+    if (ofGetFrameNum()%60 == 0) direction = gui->getSlider("Winddirection")->getValue();
+    
+    float rcp = ((direction + 180 ) % 360)*1.0;
+    ofNoFill();
+    int w = 10;
+    int xc = ofGetWidth() - (272/2);
+    int yc = ofGetHeight() - (272/3) - 25;
+    int r = 30;
+    float r2 = 8;
+    int angle = 40;
+    ofDrawCircle(xc, yc, r);
+    
+    float xp = xc - r * cos( ofDegToRad(270 - rcp));
+    float yp = yc + r * sin( ofDegToRad(270 - rcp));
+    ofDrawLine(xc, yc, xp, yp );
+    float theta = ofDegToRad(direction + angle - 270 );
+    float arrowx =  xp - r2  * cos(theta);
+    float arrowy = yp - r2  * sin(theta);
+    ofDrawLine(xp, yp, arrowx, arrowy );
+    theta = ofDegToRad(270 - direction + angle );
+    arrowx =  xp - r2  * cos(theta);
+    arrowy = yp + r2  * sin(theta);
+    ofDrawLine(xp, yp, arrowx, arrowy );
+    
+    ofDrawBitmapString("N", xc - w / 2, yc - r - 7);
+    ofDrawBitmapString("S", xc - w / 2, yc + r + 21);
+    ofDrawBitmapString("E", xc + r + w / 2, yc + 7);
+    ofDrawBitmapString("W", xc - r - 3 * w / 2, yc + 7);
+    ofDrawBitmapString("Press 'g' to toogle gui", xc - r - 3 * w / 2 - 50, yc + 66);
+    ofDrawBitmapString("Press 1-9 to set particle render", xc - r - 3 * w / 2 - 85, yc + 90);
 }
 
 
