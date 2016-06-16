@@ -214,6 +214,13 @@ void ofApp::setup() {
         yPos[i] = ofRandom(ofGetHeight());
         size[i] = ofRandom(3, 12);
     }
+    
+    
+    //Syphon
+    mainOutputSyphonServer.setName("Screen Output");
+    mClient.setup();
+    
+    
 }
 
 
@@ -463,6 +470,7 @@ void ofApp::update() {
     
     rgbaFboFloat.end();
     
+
     
 }
 
@@ -517,6 +525,12 @@ void ofApp::draw() {
         }
         
     }
+    
+    //Disabled Syphon for demonstration purposes, because it tends to slow down fps. Will attempt to solve this later...
+//    if (gui->getToggle("Syphon")->getChecked()==1) {
+//        mainOutputSyphonServer.publishScreen();
+//    }
+
 }
 
 
@@ -588,7 +602,6 @@ void ofApp::drawFbo(){
        //Do nothing - this is drawn directly in the draw function
     }
     
-    
 }
 
 //--------------------------------------------------------------
@@ -645,6 +658,7 @@ void ofApp::mouseDragged(int x, int y, int button) {
             particles.createParticle(position, velocity);
         }
     }
+    
 }
 
 

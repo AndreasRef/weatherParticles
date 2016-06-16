@@ -3,6 +3,7 @@
 #include "ofxDatGui.h"
 #include "ofxLiquidFun.h"
 #include "ofxOsc.h"
+#include "ofxSyphon.h"
 
 
 // -------------------------------------------------
@@ -102,6 +103,11 @@ public:
     
     //Arrow
     ofImage arrow;
+    
+    
+    //Syphon
+    ofxSyphonServer mainOutputSyphonServer;
+    ofxSyphonClient mClient;
     
 
 };
